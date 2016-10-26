@@ -1,0 +1,199 @@
+#include <QApplication>
+#include <QTextEdit>
+#include <QDockWidget>
+#include <QMenu>
+#include <QMenuBar>
+#include <QMessageBox>
+#include <QLabel>
+#include <QScrollArea>
+#include <QFileDialog>
+#include <QImageReader>
+
+#if QT_VERSION >= 0x050000
+#include <QStandardPaths>
+#endif
+
+#include "MainWindow.h"
+
+MainWindow::MainWindow() :
+  _imageDialog(0)
+{
+  _imageLabel = new QLabel;
+    _imageLabel->setBackgroundRole(QPalette::Base);
+    _imageLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    _imageLabel->setScaledContents(true);
+    _imageLabel->setAlignment(Qt::AlignCenter);
+
+  _imageScrollArea = new QScrollArea;
+    _imageScrollArea->setBackgroundRole(QPalette::Base);
+    _imageScrollArea->setWidget(_imageLabel);
+    _imageScrollArea->setVisible(true);
+    _imageScrollArea->setAlignment(Qt::AlignCenter);
+
+  _scaleFactor = 1.0;
+
+  setCentralWidget(_imageScrollArea);
+
+  createActions();
+  createMenus();
+  createToolBars();
+  createStatusBar();
+  createDockWindows();
+
+  setWindowTitle(tr("qexiv"));
+}
+
+void MainWindow::createActions()
+{
+  _openFileAction = new QAction(tr("&Open File..."), this);
+  _openFileAction->setStatusTip(tr("Open an image file"));
+  connect(_openFileAction, SIGNAL(triggered()), this, SLOT(openFile()));
+
+  _quitAction = new QAction(tr("&Quit"), this);
+  _quitAction->setShortcuts(QKeySequence::Quit);
+  _quitAction->setStatusTip(tr("Quit the application"));
+  connect(_quitAction, SIGNAL(triggered()), this, SLOT(close()));
+
+  _aboutAction = new QAction(tr("&About"), this);
+  _aboutAction->setStatusTip(tr("Show the application's About box"));
+  connect(_aboutAction, SIGNAL(triggered()), this, SLOT(about()));
+
+  _aboutQtAction = new QAction(tr("About &Qt"), this);
+  _aboutQtAction->setStatusTip(tr("Show the Qt library's About box"));
+  connect(_aboutQtAction, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
+}
+
+void MainWindow::createMenus()
+{
+  _fileMenu = menuBar()->addMenu(tr("&File"));
+  _fileMenu->addAction(_openFileAction);
+  _fileMenu->addSeparator();
+  _fileMenu->addAction(_quitAction);
+
+  _imageMenu = menuBar()->addMenu(tr("&Image"));
+
+  _windowMenu = menuBar()->addMenu(tr("&Window"));
+
+  _helpMenu = menuBar()->addMenu(tr("&Help"));
+  _helpMenu->addAction(_aboutAction);
+  _helpMenu->addAction(_aboutQtAction);
+}
+
+void MainWindow::createToolBars()
+{
+}
+
+void MainWindow::createStatusBar()
+{
+}
+
+void MainWindow::createDockWindows()
+{
+  QDockWidget *dock = new QDockWidget(tr("Exif metadata"), this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    addDockWidget(Qt::RightDockWidgetArea, dock);
+  _windowMenu->addAction(dock->toggleViewAction());
+
+  dock = new QDockWidget(tr("Map"), this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    addDockWidget(Qt::RightDockWidgetArea, dock);
+  _windowMenu->addAction(dock->toggleViewAction());
+
+  dock = new QDockWidget(tr("Directory"), this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    addDockWidget(Qt::LeftDockWidgetArea, dock);;
+  _windowMenu->addAction(dock->toggleViewAction());
+
+  dock = new QDockWidget(tr("Comment"), this);
+    dock->setAllowedAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
+    addDockWidget(Qt::BottomDockWidgetArea, dock);
+  _windowMenu->addAction(dock->toggleViewAction());
+}
+
+void MainWindow::openImage(const QString &filename)
+{
+  QImageReader reader(filename);
+
+#if QT_VERSION >= 0x050500
+  reader.setAutoTransform(true);
+#endif
+
+  const QImage image = reader.read();
+
+  if (image.isNull())
+  {
+    QMessageBox::information(this,
+                             tr("Error: unable to load image"),
+                             tr("Unable to load the image %1: %2").arg(QDir::toNativeSeparators(filename), reader.errorString()));
+  }
+  else
+  {
+    setImage(image);
+  }
+}
+
+void MainWindow::setImage(const QImage &image)
+{
+  _image = image;
+
+  _imageLabel->setPixmap(QPixmap::fromImage(_image));
+
+  _scaleFactor = 1.0;
+
+  _imageLabel->adjustSize();
+}
+
+// Slots
+
+void MainWindow::openFile()
+{
+  if (_imageDialog == 0)
+  {
+    _imageDialog = new QFileDialog(this, tr("Open image file"));
+
+    _imageDialog->setAcceptMode(QFileDialog::AcceptOpen);
+    _imageDialog->setFileMode(QFileDialog::ExistingFile);
+
+#if QT_VERSION >= 0x050000
+    const QStringList imageDirectories = QStandardPaths::standardLocations(QStandardPaths::PicturesLocation);
+
+    if (imageDirectories.isEmpty())
+    {
+      _imageDialog->setDirectory(imageDirectories.last());
+    }
+    else
+    {
+      _imageDialog->setDirectory(QDir::currentPath());
+    }
+#else
+    _imageDialog->setDirectory(QDir::currentPath());
+#endif
+
+#if QT_VERSION >= 0x050200
+    /// todo selectMimeTypeFilter(const QString &filter)
+#else
+    QStringList nameFilters;
+
+    nameFilters << "Image files (*.jpg *.JPG *.jpeg *.JPEG)";
+
+    _imageDialog->setNameFilters(nameFilters);
+#endif
+  }
+
+  if (_imageDialog->exec() == QDialog::Accepted)
+  {
+    openImage(_imageDialog->selectedFiles().first());
+  }
+
+  _imageDialog->close();
+}
+
+void MainWindow::about()
+{
+   QMessageBox::about(this, tr("About qexiv"),
+            tr("qexiv manipulates the exif metadata in images.\n\n"
+               "qexiv Copyright (C) 2016\n\n"
+               "This program comes with ABSOLUTELY NO WARRANTY;\n"
+               "This is free software, and you are welcome to redistribute it "
+               "under certain conditions; see the license for details."));
+}

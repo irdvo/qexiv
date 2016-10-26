@@ -27,3 +27,10 @@
 *.exe
 *.out
 *.app
+
+# Editor
+*.config
+*.creator
+*.files
+*.includes
+
