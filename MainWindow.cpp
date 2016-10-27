@@ -8,6 +8,7 @@
 #include <QScrollArea>
 #include <QFileDialog>
 #include <QImageReader>
+#include <QScrollBar>
 
 #if QT_VERSION >= 0x050000
 #include <QStandardPaths>
@@ -43,6 +44,7 @@ MainWindow::MainWindow() :
   setWindowTitle(tr("qexiv"));
 }
 
+// -- GUI ---------------------------------------------------------------------
 void MainWindow::createActions()
 {
   _openFileAction = new QAction(tr("&Open File..."), this);
@@ -71,6 +73,23 @@ void MainWindow::createMenus()
   _fileMenu->addAction(_quitAction);
 
   _imageMenu = menuBar()->addMenu(tr("&Image"));
+
+  _zoomInAction = _imageMenu->addAction(tr("Zoom &In (25%)"), this, &MainWindow::zoomIn);
+  _zoomInAction->setShortcut(QKeySequence::ZoomIn);
+  _zoomInAction->setEnabled(false);
+
+  _zoomOutAction = _imageMenu->addAction(tr("Zoom &Out (25%)"), this, &MainWindow::zoomOut);
+  _zoomOutAction->setShortcut(QKeySequence::ZoomOut);
+  _zoomOutAction->setEnabled(false);
+
+  _setNormalSizeAction = _imageMenu->addAction(tr("&Normal Size"), this, &MainWindow::setNormalSize);
+  _setNormalSizeAction->setShortcut(tr("Ctrl+S"));
+  _setNormalSizeAction->setEnabled(false);
+
+  _fitToWindowAction = _imageMenu->addAction(tr("&Fit to Window"), this, &MainWindow::fitToWindow);
+  _fitToWindowAction->setEnabled(false);
+  _fitToWindowAction->setCheckable(true);
+  _fitToWindowAction->setShortcut(tr("Ctrl+F"));
 
   _windowMenu = menuBar()->addMenu(tr("&Window"));
 
@@ -110,6 +129,14 @@ void MainWindow::createDockWindows()
   _windowMenu->addAction(dock->toggleViewAction());
 }
 
+void MainWindow::updateActions()
+{
+  _zoomInAction       ->setEnabled(!_fitToWindowAction->isChecked());
+  _zoomOutAction      ->setEnabled(!_fitToWindowAction->isChecked());
+  _setNormalSizeAction->setEnabled(!_fitToWindowAction->isChecked());
+}
+
+// -- Image -------------------------------------------------------------------
 void MainWindow::openImage(const QString &filename)
 {
   QImageReader reader(filename);
@@ -140,10 +167,35 @@ void MainWindow::setImage(const QImage &image)
 
   _scaleFactor = 1.0;
 
-  _imageLabel->adjustSize();
+  _fitToWindowAction->setEnabled(true);
+
+  updateActions();
+
+  if (!_fitToWindowAction->isChecked())
+  {
+    _imageLabel->adjustSize();
+  }
 }
 
-// Slots
+void MainWindow::scaleImage(double factor)
+{
+  _scaleFactor *= factor;
+
+  _imageLabel->resize(_scaleFactor * _imageLabel->pixmap()->size());
+
+  adjustScrollBar(_imageScrollArea->horizontalScrollBar(), factor);
+  adjustScrollBar(_imageScrollArea->verticalScrollBar(),   factor);
+
+  _zoomInAction ->setEnabled(_scaleFactor < 5.0);
+  _zoomOutAction->setEnabled(_scaleFactor > 0.2);
+}
+
+void MainWindow::adjustScrollBar(QScrollBar *scrollBar, double factor)
+{
+  scrollBar->setValue(int(factor * scrollBar->value() + ((factor - 1) * scrollBar->pageStep()/2)));
+}
+
+// -- Slots -------------------------------------------------------------------
 
 void MainWindow::openFile()
 {
@@ -170,7 +222,11 @@ void MainWindow::openFile()
 #endif
 
 #if QT_VERSION >= 0x050200
-    /// todo selectMimeTypeFilter(const QString &filter)
+    QStringList mimeFilters;
+
+    mimeFilters << "image/jpeg";
+
+    _imageDialog->setMimeTypeFilters(mimeFilters);
 #else
     QStringList nameFilters;
 
@@ -188,6 +244,37 @@ void MainWindow::openFile()
   _imageDialog->close();
 }
 
+void MainWindow::zoomIn()
+{
+  scaleImage(1.25);
+}
+
+void MainWindow::zoomOut()
+{
+  scaleImage(0.8);
+}
+
+void MainWindow::setNormalSize()
+{
+  _imageLabel->adjustSize();
+
+  _scaleFactor = 1.0;
+}
+
+void MainWindow::fitToWindow()
+{
+  bool fitToWindow = _fitToWindowAction->isChecked();
+
+  _imageScrollArea->setWidgetResizable(fitToWindow);
+
+  if (!fitToWindow)
+  {
+     setNormalSize();
+  }
+
+  updateActions();
+}
+
 void MainWindow::about()
 {
    QMessageBox::about(this, tr("About qexiv"),
@@ -197,3 +284,5 @@ void MainWindow::about()
                "This is free software, and you are welcome to redistribute it "
                "under certain conditions; see the license for details."));
 }
+
+// ----------------------------------------------------------------------------
