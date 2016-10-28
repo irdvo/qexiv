@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QImage>
 
+#include "Exiv2.h"
+
 class QAction;
 class QListWidget;
 class QMenu;
@@ -66,6 +68,9 @@ private:
   QScrollArea *_imageScrollArea;
   QImage       _image;
   double       _scaleFactor;
+
+  // Exiv2
+  Exiv2        _exiv2;
 };
 
 #endif

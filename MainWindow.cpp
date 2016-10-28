@@ -9,12 +9,15 @@
 #include <QFileDialog>
 #include <QImageReader>
 #include <QScrollBar>
+#include <QTableView>
+#include <QHeaderView>
 
 #if QT_VERSION >= 0x050000
 #include <QStandardPaths>
 #endif
 
 #include "MainWindow.h"
+
 
 MainWindow::MainWindow() :
   _imageDialog(0)
@@ -110,6 +113,12 @@ void MainWindow::createDockWindows()
 {
   QDockWidget *dock = new QDockWidget(tr("Exif metadata"), this);
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+
+    QTableView *exifView = new QTableView(dock);
+    exifView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    exifView->setModel(&_exiv2);
+
+    dock->setWidget(exifView);
     addDockWidget(Qt::RightDockWidgetArea, dock);
   _windowMenu->addAction(dock->toggleViewAction());
 
