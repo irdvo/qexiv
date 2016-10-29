@@ -14,6 +14,7 @@ class QLabel;
 class QScrollArea;
 class QFileDialog;
 class QScrollBar;
+class QTableView;
 
 class MainWindow : public QMainWindow
 {
@@ -21,6 +22,7 @@ class MainWindow : public QMainWindow
 
 public:
   MainWindow();
+  ~MainWindow();
 
 private slots:
   void openFile();
@@ -38,6 +40,7 @@ private:
   void createStatusBar();
   void createDockWindows();
 
+  void setTitle();
   void updateActions();
 
   void adjustScrollBar(QScrollBar *scrollBar, double factor);
@@ -62,10 +65,13 @@ private:
   QAction     *_setNormalSizeAction;
   QAction     *_fitToWindowAction;
 
+  QTableView *exifView;
+
   // Image
   QFileDialog *_imageDialog;
   QLabel      *_imageLabel;
   QScrollArea *_imageScrollArea;
+  QString      _imageFilename;
   QImage       _image;
   double       _scaleFactor;
 

@@ -20,7 +20,9 @@
 
 
 MainWindow::MainWindow() :
-  _imageDialog(0)
+  _imageDialog(0),
+  _imageFilename(""),
+  _exiv2(this)
 {
   _imageLabel = new QLabel;
     _imageLabel->setBackgroundRole(QPalette::Base);
@@ -44,7 +46,12 @@ MainWindow::MainWindow() :
   createStatusBar();
   createDockWindows();
 
-  setWindowTitle(tr("qexiv"));
+  setTitle();
+}
+
+MainWindow::~MainWindow()
+{
+
 }
 
 // -- GUI ---------------------------------------------------------------------
@@ -114,9 +121,9 @@ void MainWindow::createDockWindows()
   QDockWidget *dock = new QDockWidget(tr("Exif metadata"), this);
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
-    QTableView *exifView = new QTableView(dock);
+    exifView = new QTableView(dock);
     exifView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    exifView->setModel(&_exiv2);
+    exifView->setModel(&_exiv2.exivModel());
 
     dock->setWidget(exifView);
     addDockWidget(Qt::RightDockWidgetArea, dock);
@@ -145,6 +152,19 @@ void MainWindow::updateActions()
   _setNormalSizeAction->setEnabled(!_fitToWindowAction->isChecked());
 }
 
+void MainWindow::setTitle()
+{
+  QString title = "qexiv";
+
+  if (_imageFilename.length() > 0)
+  {
+    title.append(" - ");
+    title.append(_imageFilename);
+  }
+
+  setWindowTitle(title);
+}
+
 // -- Image -------------------------------------------------------------------
 void MainWindow::openImage(const QString &filename)
 {
@@ -164,6 +184,12 @@ void MainWindow::openImage(const QString &filename)
   }
   else
   {
+    _imageFilename = filename;
+
+    setTitle();
+
+    _exiv2.fetch(_imageFilename);
+
     setImage(image);
   }
 }

@@ -33,6 +33,10 @@
 *.creator
 *.files
 *.includes
+*.user
 
+# Others
 moc*.cpp
-
+Makefile
+qexiv
+*.stash

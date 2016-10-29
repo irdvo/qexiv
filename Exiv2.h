@@ -3,17 +3,35 @@
 
 #include <QAbstractTableModel>
 #include <QVariant>
+#include <QProcess>
 
-class Exiv2 : public QAbstractTableModel
+#include "ExivModel.h"
+
+class Exiv2 : public QProcess // QAbstractTableModel
 {
+  Q_OBJECT
+
 public:
-  Exiv2();
+  Exiv2(QObject *parent);
+  ~Exiv2();
 
-  int rowCount   (const QModelIndex& parent) const;
-  int columnCount(const QModelIndex& parent) const;
+  // -- Model -----------------------------------------------------------------
+  ExivModel &exivModel() { return exivModel_; }
 
-  QVariant headerData(int section, Qt::Orientation orientation, int role) const;
-  QVariant data(const QModelIndex& index, int role) const;
+  // -- Commands --------------------------------------------------------------
+  bool fetch(const QString &imageFilename);
+
+private slots:
+  void reportError();
+  void reportData();
+  void done(int exitCode, QProcess::ExitStatus exitStatus);
+
+private:
+  void skipSpaces(const QString &buffer, int &i);
+  void readTillSpace(const QString &buffer, int &i, QString &result);
+  void readTillEOL(const QString &buffer, int &i, QString &result);
+
+  ExivModel exivModel_;
 };
 
 #endif

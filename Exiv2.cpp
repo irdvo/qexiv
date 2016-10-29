@@ -1,38 +1,136 @@
+#include <QMessageBox>
+
 #include "Exiv2.h"
 
-Exiv2::Exiv2()
+Exiv2::Exiv2(QObject *parent = 0) :
+  QProcess(parent),
+  exivModel_()
+{
+  /// todo: better error reporting
+  connect(this, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(done(int, QProcess::ExitStatus)));
+  connect(this, SIGNAL(readyReadStandardError()),            this, SLOT(reportError()));
+  connect(this, SIGNAL(readyReadStandardOutput()),           this, SLOT(reportData()));
+}
+
+Exiv2::~Exiv2()
 {
 
 }
 
-int Exiv2::rowCount(const QModelIndex&) const
+// -- Fetch the exif metadata for the image -----------------------------------
+bool Exiv2::fetch(const QString &imageFilename)
 {
-  return 0;
-}
+  bool ok = false;
 
-int Exiv2::columnCount(const QModelIndex&) const
-{
-  return 2;
-}
-
-QVariant Exiv2::data(const QModelIndex& index, int role) const
-{
-  return QVariant::Invalid;
-}
-
-QVariant Exiv2::headerData(int section, Qt::Orientation orientation, int role) const
-{
-  if ((role == Qt::DisplayRole) && (orientation == Qt::Horizontal))
+  if (state() == QProcess::NotRunning)
   {
-    if (section == 0)
-    {
-      return tr("Key");
-    }
-    else if (section == 1)
-    {
-      return tr("Value");
-    }
+    exivModel_.clear();
+
+    QStringList parameters;
+
+    parameters << "-pt" << "print" << imageFilename;
+
+    start("exiv2", parameters);
   }
 
-  return QVariant::Invalid;
+  return ok;
 }
+
+// -- Slots -------------------------------------------------------------------
+void Exiv2::reportError()
+{
+  QByteArray buffer = readAllStandardError();
+
+  QMessageBox::critical(0, "exiv2 error", buffer);
+}
+
+void Exiv2::reportData()
+{
+  QString key;
+  QString type;
+  QString length;
+  QString value;
+
+  QString buffer = readAllStandardOutput();
+
+  int i = 0;
+  while (i < buffer.length())
+  {
+    skipSpaces(buffer, i);
+
+    readTillSpace(buffer, i, key);
+
+    skipSpaces(buffer, i);
+
+    readTillSpace(buffer, i, type);
+
+    skipSpaces(buffer, i);
+
+    readTillSpace(buffer, i, length);
+
+    skipSpaces(buffer, i);
+
+    readTillEOL(buffer, i, value);
+
+    if (key.length() > 0)
+    {
+      exivModel_.add(key, type, length, value);
+    }
+  }
+}
+
+void Exiv2::skipSpaces(const QString &buffer, int &i)
+{
+  while ((i < buffer.length()) && (buffer.at(i).isSpace()))
+  {
+    i++;
+  }
+}
+
+void Exiv2::readTillSpace(const QString &buffer, int &i, QString &result)
+{
+  result.clear();
+
+  while ((i < buffer.length()) && (!buffer.at(i).isSpace()))
+  {
+    result.append(buffer.at(i));
+
+    i++;
+  }
+}
+
+void Exiv2::readTillEOL(const QString &buffer, int &i, QString &result)
+{
+  result.clear();
+
+  while ((i < buffer.length()) && (buffer.at(i) != '\n') && (buffer.at(i) != '\r'))
+  {
+    result.append(buffer.at(i));
+
+    i++;
+  }
+
+  if (buffer.at(i) == '\r')
+  {
+    i++;
+  }
+
+  if (buffer.at(i) == '\n')
+  {
+    i++;
+  }
+
+  result.trimmed();
+}
+
+void Exiv2::done(int, ExitStatus exitStatus)
+{
+  if (exivModel_.length() == 0)
+  {
+    QMessageBox::warning(0, tr("Exif metadata"), tr("No exif metadata present in this image"));
+  }
+
+  exivModel_.done();
+}
+
+// ----------------------------------------------------------------------------
