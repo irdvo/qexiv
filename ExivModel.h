@@ -3,6 +3,7 @@
 
 #include <QAbstractTableModel>
 #include <QVariant>
+#include <QVector>
 
 class ExivModel : public QAbstractTableModel
 {
@@ -25,7 +26,7 @@ public:
   void done();
 
   // -- Getters ---------------------------------------------------------------
-  int length() const { return exivItems_.length(); }
+  int length() const { return exivItems_.size(); }
 
 private:
 

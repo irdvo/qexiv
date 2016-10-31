@@ -14,7 +14,7 @@ ExivModel::~ExivModel()
 // -- QAbstractTableModel implementation --------------------------------------
 int ExivModel::rowCount(const QModelIndex&) const
 {
-  return exivItems_.length();
+  return exivItems_.size();
 }
 
 int ExivModel::columnCount(const QModelIndex&) const

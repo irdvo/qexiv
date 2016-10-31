@@ -81,7 +81,7 @@ void Exiv2::reportData()
 
 void Exiv2::skipSpaces(const QString &buffer, int &i)
 {
-  while ((i < buffer.length()) && (buffer.at(i).isSpace()))
+  while ((i < buffer.length()) && (buffer.at(i).isSpace()) && (buffer.at(i) != '\n') && (buffer.at(i) != '\r'))
   {
     i++;
   }
@@ -123,7 +123,7 @@ void Exiv2::readTillEOL(const QString &buffer, int &i, QString &result)
   result.trimmed();
 }
 
-void Exiv2::done(int, ExitStatus exitStatus)
+void Exiv2::done(int, ExitStatus)
 {
   if (exivModel_.length() == 0)
   {

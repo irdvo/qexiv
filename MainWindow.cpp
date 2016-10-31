@@ -66,6 +66,27 @@ void MainWindow::createActions()
   _quitAction->setStatusTip(tr("Quit the application"));
   connect(_quitAction, SIGNAL(triggered()), this, SLOT(close()));
 
+  _zoomInAction = new QAction(tr("Zoom &In (25%)"), this);
+  _zoomInAction->setShortcut(QKeySequence::ZoomIn);
+  _zoomInAction->setEnabled(false);
+  connect(_zoomInAction, SIGNAL(triggered()), this, SLOT(zoomIn()));
+
+  _zoomOutAction = new QAction(tr("Zoom &Out (25%)"), this);
+  _zoomOutAction->setShortcut(QKeySequence::ZoomOut);
+  _zoomOutAction->setEnabled(false);
+  connect(_zoomOutAction, SIGNAL(triggered()), this, SLOT(zoomOut()));
+
+  _setNormalSizeAction = new QAction(tr("&Normal Size"), this);
+  _setNormalSizeAction->setShortcut(tr("Ctrl+S"));
+  _setNormalSizeAction->setEnabled(false);
+  connect(_setNormalSizeAction, SIGNAL(triggered()), this, SLOT(setNormalSize()));
+
+  _fitToWindowAction = new QAction(tr("&Fit to Window"), this);
+  _fitToWindowAction->setCheckable(true);
+  _fitToWindowAction->setShortcut(tr("Ctrl+F"));
+  _fitToWindowAction->setEnabled(false);
+  connect(_fitToWindowAction, SIGNAL(triggered()), this, SLOT(fitToWindow()));
+
   _aboutAction = new QAction(tr("&About"), this);
   _aboutAction->setStatusTip(tr("Show the application's About box"));
   connect(_aboutAction, SIGNAL(triggered()), this, SLOT(about()));
@@ -84,22 +105,10 @@ void MainWindow::createMenus()
 
   _imageMenu = menuBar()->addMenu(tr("&Image"));
 
-  _zoomInAction = _imageMenu->addAction(tr("Zoom &In (25%)"), this, &MainWindow::zoomIn);
-  _zoomInAction->setShortcut(QKeySequence::ZoomIn);
-  _zoomInAction->setEnabled(false);
-
-  _zoomOutAction = _imageMenu->addAction(tr("Zoom &Out (25%)"), this, &MainWindow::zoomOut);
-  _zoomOutAction->setShortcut(QKeySequence::ZoomOut);
-  _zoomOutAction->setEnabled(false);
-
-  _setNormalSizeAction = _imageMenu->addAction(tr("&Normal Size"), this, &MainWindow::setNormalSize);
-  _setNormalSizeAction->setShortcut(tr("Ctrl+S"));
-  _setNormalSizeAction->setEnabled(false);
-
-  _fitToWindowAction = _imageMenu->addAction(tr("&Fit to Window"), this, &MainWindow::fitToWindow);
-  _fitToWindowAction->setEnabled(false);
-  _fitToWindowAction->setCheckable(true);
-  _fitToWindowAction->setShortcut(tr("Ctrl+F"));
+  _imageMenu->addAction(_zoomInAction);
+  _imageMenu->addAction(_zoomOutAction);
+  _imageMenu->addAction(_setNormalSizeAction);
+  _imageMenu->addAction(_fitToWindowAction);
 
   _windowMenu = menuBar()->addMenu(tr("&Window"));
 
@@ -122,7 +131,11 @@ void MainWindow::createDockWindows()
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
     exifView = new QTableView(dock);
+#if QT_VERSION >= 0x050000
     exifView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+#else
+    exifView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+#endif
     exifView->setModel(&_exiv2.exivModel());
 
     dock->setWidget(exifView);
