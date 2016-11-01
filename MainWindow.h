@@ -21,7 +21,7 @@ class MainWindow : public QMainWindow
   Q_OBJECT
 
 public:
-  MainWindow();
+  MainWindow(int argc, char *argv[]);
   ~MainWindow();
 
 private slots:
@@ -31,7 +31,9 @@ private slots:
   void zoomIn();
   void zoomOut();
   void setNormalSize();
+  void setFullSize();
   void fitToWindow();
+  void map();
 
 private:
   void createActions();
@@ -63,7 +65,9 @@ private:
   QAction     *_zoomInAction;
   QAction     *_zoomOutAction;
   QAction     *_setNormalSizeAction;
+  QAction     *_setFullSizeAction;
   QAction     *_fitToWindowAction;
+  QAction     *_mapAction;
 
   QTableView *exifView;
 

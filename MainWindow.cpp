@@ -11,6 +11,9 @@
 #include <QScrollBar>
 #include <QTableView>
 #include <QHeaderView>
+#include <QTextStream>
+#include <QDesktopServices>
+#include <QUrl>
 
 #if QT_VERSION >= 0x050000
 #include <QStandardPaths>
@@ -19,7 +22,7 @@
 #include "MainWindow.h"
 
 
-MainWindow::MainWindow() :
+MainWindow::MainWindow(int argc, char *argv[]) :
   _imageDialog(0),
   _imageFilename(""),
   _exiv2(this)
@@ -47,6 +50,11 @@ MainWindow::MainWindow() :
   createDockWindows();
 
   setTitle();
+
+  if (argc > 1)
+  {
+    openImage(argv[1]);
+  }
 }
 
 MainWindow::~MainWindow()
@@ -81,11 +89,21 @@ void MainWindow::createActions()
   _setNormalSizeAction->setEnabled(false);
   connect(_setNormalSizeAction, SIGNAL(triggered()), this, SLOT(setNormalSize()));
 
+  _setFullSizeAction = new QAction(tr("&Full Size"), this);
+  _setFullSizeAction->setShortcut(tr("Ctrl+F"));
+  _setFullSizeAction->setEnabled(false);
+  connect(_setFullSizeAction, SIGNAL(triggered()), this, SLOT(setFullSize()));
+
   _fitToWindowAction = new QAction(tr("&Fit to Window"), this);
   _fitToWindowAction->setCheckable(true);
   _fitToWindowAction->setShortcut(tr("Ctrl+F"));
   _fitToWindowAction->setEnabled(false);
   connect(_fitToWindowAction, SIGNAL(triggered()), this, SLOT(fitToWindow()));
+
+  _mapAction = new QAction(tr("&Map"), this);
+  _mapAction->setShortcut(tr("Ctrl+M"));
+  _mapAction->setEnabled(false);
+  connect(_mapAction, SIGNAL(triggered()), this, SLOT(map()));
 
   _aboutAction = new QAction(tr("&About"), this);
   _aboutAction->setStatusTip(tr("Show the application's About box"));
@@ -108,7 +126,10 @@ void MainWindow::createMenus()
   _imageMenu->addAction(_zoomInAction);
   _imageMenu->addAction(_zoomOutAction);
   _imageMenu->addAction(_setNormalSizeAction);
+  _imageMenu->addAction(_setFullSizeAction);
   _imageMenu->addAction(_fitToWindowAction);
+  _fileMenu->addSeparator();
+  _imageMenu->addAction(_mapAction);
 
   _windowMenu = menuBar()->addMenu(tr("&Window"));
 
@@ -142,11 +163,6 @@ void MainWindow::createDockWindows()
     addDockWidget(Qt::RightDockWidgetArea, dock);
   _windowMenu->addAction(dock->toggleViewAction());
 
-  dock = new QDockWidget(tr("Map"), this);
-    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    addDockWidget(Qt::RightDockWidgetArea, dock);
-  _windowMenu->addAction(dock->toggleViewAction());
-
   dock = new QDockWidget(tr("Directory"), this);
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     addDockWidget(Qt::LeftDockWidgetArea, dock);;
@@ -163,6 +179,8 @@ void MainWindow::updateActions()
   _zoomInAction       ->setEnabled(!_fitToWindowAction->isChecked());
   _zoomOutAction      ->setEnabled(!_fitToWindowAction->isChecked());
   _setNormalSizeAction->setEnabled(!_fitToWindowAction->isChecked());
+  _setFullSizeAction  ->setEnabled(!_fitToWindowAction->isChecked());
+  _mapAction          ->setEnabled(_imageFilename.size() > 0);
 }
 
 void MainWindow::setTitle()
@@ -171,8 +189,7 @@ void MainWindow::setTitle()
 
   if (_imageFilename.length() > 0)
   {
-    title.append(" - ");
-    title.append(_imageFilename);
+    title.append(QString(" - %1 (%2%)").arg(_imageFilename).arg((int) (_scaleFactor * 100.0)));
   }
 
   setWindowTitle(title);
@@ -221,7 +238,7 @@ void MainWindow::setImage(const QImage &image)
 
   if (!_fitToWindowAction->isChecked())
   {
-    _imageLabel->adjustSize();
+    setNormalSize();
   }
 }
 
@@ -234,8 +251,10 @@ void MainWindow::scaleImage(double factor)
   adjustScrollBar(_imageScrollArea->horizontalScrollBar(), factor);
   adjustScrollBar(_imageScrollArea->verticalScrollBar(),   factor);
 
-  _zoomInAction ->setEnabled(_scaleFactor < 5.0);
-  _zoomOutAction->setEnabled(_scaleFactor > 0.2);
+  _zoomInAction ->setEnabled(_scaleFactor < 2.0);
+  _zoomOutAction->setEnabled(_scaleFactor > 0.1);
+
+  setTitle();
 }
 
 void MainWindow::adjustScrollBar(QScrollBar *scrollBar, double factor)
@@ -299,14 +318,26 @@ void MainWindow::zoomIn()
 
 void MainWindow::zoomOut()
 {
-  scaleImage(0.8);
+  scaleImage(0.75);
 }
 
 void MainWindow::setNormalSize()
 {
-  _imageLabel->adjustSize();
-
   _scaleFactor = 1.0;
+
+  // Scale the image to fit on screen
+  double factor = qMin((double) _imageScrollArea->size().width()  / (double) _image.size().width(),
+                       (double) _imageScrollArea->size().height() / (double) _image.size().height());
+
+  scaleImage(factor * 0.95);
+
+}
+
+void MainWindow::setFullSize()
+{
+  _scaleFactor = 1.0;
+
+  _imageLabel->adjustSize();
 }
 
 void MainWindow::fitToWindow()
@@ -323,14 +354,22 @@ void MainWindow::fitToWindow()
   updateActions();
 }
 
+void MainWindow::map()
+{
+  if (!QDesktopServices::openUrl(QUrl("http://www.openstreetmap.org/?mlat=51.91654&mlon=4.49873#map=18/51.91654/4.49873")))
+  {
+
+  }
+}
+
 void MainWindow::about()
 {
-   QMessageBox::about(this, tr("About qexiv"),
-            tr("qexiv manipulates the exif metadata in images.\n\n"
-               "qexiv Copyright (C) 2016\n\n"
-               "This program comes with ABSOLUTELY NO WARRANTY;\n"
-               "This is free software, and you are welcome to redistribute it "
-               "under certain conditions; see the license for details."));
+  QMessageBox::about(this, tr("About qexiv"),
+          tr("qexiv manipulates the exif metadata in images.\n\n"
+             "qexiv Copyright (C) 2016\n\n"
+             "This program comes with ABSOLUTELY NO WARRANTY;\n"
+             "This is free software, and you are welcome to redistribute it "
+             "under certain conditions; see the license for details."));
 }
 
 // ----------------------------------------------------------------------------
