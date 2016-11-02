@@ -28,6 +28,11 @@ public:
   // -- Getters ---------------------------------------------------------------
   int length() const { return exivItems_.size(); }
 
+  bool getGPSLocation(double *latitude = 0, double *longitude = 0);
+
+  static
+  bool scanGPSLocation(double *location, const QString &value);
+
 private:
 
   struct ExivItem

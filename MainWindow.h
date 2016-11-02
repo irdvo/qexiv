@@ -33,7 +33,7 @@ private slots:
   void setNormalSize();
   void setFullSize();
   void fitToWindow();
-  void map();
+  void showMap();
 
 private:
   void createActions();
@@ -67,7 +67,7 @@ private:
   QAction     *_setNormalSizeAction;
   QAction     *_setFullSizeAction;
   QAction     *_fitToWindowAction;
-  QAction     *_mapAction;
+  QAction     *_showMapAction;
 
   QTableView *exifView;
 

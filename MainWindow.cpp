@@ -100,10 +100,10 @@ void MainWindow::createActions()
   _fitToWindowAction->setEnabled(false);
   connect(_fitToWindowAction, SIGNAL(triggered()), this, SLOT(fitToWindow()));
 
-  _mapAction = new QAction(tr("&Map"), this);
-  _mapAction->setShortcut(tr("Ctrl+M"));
-  _mapAction->setEnabled(false);
-  connect(_mapAction, SIGNAL(triggered()), this, SLOT(map()));
+  _showMapAction = new QAction(tr("Show location on &Map"), this);
+  _showMapAction->setShortcut(tr("Ctrl+M"));
+  _showMapAction->setEnabled(false);
+  connect(_showMapAction, SIGNAL(triggered()), this, SLOT(showMap()));
 
   _aboutAction = new QAction(tr("&About"), this);
   _aboutAction->setStatusTip(tr("Show the application's About box"));
@@ -129,7 +129,7 @@ void MainWindow::createMenus()
   _imageMenu->addAction(_setFullSizeAction);
   _imageMenu->addAction(_fitToWindowAction);
   _fileMenu->addSeparator();
-  _imageMenu->addAction(_mapAction);
+  _imageMenu->addAction(_showMapAction);
 
   _windowMenu = menuBar()->addMenu(tr("&Window"));
 
@@ -180,7 +180,7 @@ void MainWindow::updateActions()
   _zoomOutAction      ->setEnabled(!_fitToWindowAction->isChecked());
   _setNormalSizeAction->setEnabled(!_fitToWindowAction->isChecked());
   _setFullSizeAction  ->setEnabled(!_fitToWindowAction->isChecked());
-  _mapAction          ->setEnabled(_imageFilename.size() > 0);
+  _showMapAction      ->setEnabled(!_imageFilename.isEmpty());
 }
 
 void MainWindow::setTitle()
@@ -354,11 +354,27 @@ void MainWindow::fitToWindow()
   updateActions();
 }
 
-void MainWindow::map()
+void MainWindow::showMap()
 {
-  if (!QDesktopServices::openUrl(QUrl("http://www.openstreetmap.org/?mlat=51.91654&mlon=4.49873#map=18/51.91654/4.49873")))
-  {
+  double latitude;
+  double longitude;
 
+  if (_exiv2.exivModel().getGPSLocation(&latitude, &longitude))
+  {
+    QString url = QString("http://www.openstreetmap.org/?mlat=%1&mlon=%2#map=18/%3/%4")
+        .arg(latitude,  0, 'f', 7)
+        .arg(longitude, 0, 'f', 7)
+        .arg(latitude,  0, 'f', 7)
+        .arg(longitude, 0, 'f', 7);
+
+    if (!QDesktopServices::openUrl(QUrl(url)))
+    {
+      QMessageBox::warning(this, tr("Browser failure"), tr("Your browser failed to show the GPS location of the image."));
+    }
+  }
+  else
+  {
+    QMessageBox::warning(this, tr("Missing GPS location"), tr("There was no GPS location found in the image."));
   }
 }
 

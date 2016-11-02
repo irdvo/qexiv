@@ -11,7 +11,7 @@ ExivModel::~ExivModel()
 {
 }
 
-// -- QAbstractTableModel implementation --------------------------------------
+// == QAbstractTableModel implementation ======================================
 int ExivModel::rowCount(const QModelIndex&) const
 {
   return exivItems_.size();
@@ -55,6 +55,8 @@ QVariant ExivModel::headerData(int section, Qt::Orientation orientation, int rol
   return QVariant::Invalid;
 }
 
+// == Fill the model ==========================================================
+
 // -- Clear the stored items --------------------------------------------------
 void ExivModel::clear()
 {
@@ -73,6 +75,74 @@ void ExivModel::add(const QString &key, const QString &type, const QString &leng
 void ExivModel::done()
 {
   endResetModel();
+}
+
+// == Getters =================================================================
+
+// -- Get the GPS location ----------------------------------------------------
+
+bool ExivModel::getGPSLocation(double *latitude, double *longitude)
+{
+  bool hasLatitude  = false;
+  bool hasLongitude = false;
+
+  for (ExivItems::iterator item = exivItems_.begin(); item != exivItems_.end(); ++item)
+  {
+    if (item->key_.endsWith("GPSLatitude", Qt::CaseInsensitive))
+    {
+      hasLatitude = scanGPSLocation(latitude, item->value_);
+    }
+    if (item->key_.endsWith("GPSLongitude", Qt::CaseInsensitive))
+    {
+      hasLongitude = scanGPSLocation(longitude, item->value_);
+    }
+
+    if (hasLatitude && hasLongitude)
+    {
+      break;
+    }
+  }
+
+  return (hasLatitude && hasLongitude);
+}
+
+bool ExivModel::scanGPSLocation(double *location, const QString &value)
+{
+  QString degrees;
+  QString minutes;
+  QString seconds;
+
+  int i = 0;
+  while ((i < value.size()) && (value.at(i).isDigit()))
+  {
+    degrees.append(value.at(i++));
+  }
+
+  while ((i < value.size()) && (!value.at(i).isDigit()))
+  {
+    i++;
+  }
+
+  while ((i < value.size()) && (value.at(i).isDigit()))
+  {
+    minutes.append(value.at(i++));
+  }
+
+  while ((i < value.size()) && (!value.at(i).isDigit()))
+  {
+    i++;
+  }
+
+  while ((i < value.size()) && ((value.at(i).isDigit()) || (value.at(i) == '.')))
+  {
+    seconds.append(value.at(i++));
+  }
+
+  if (location != 0)
+  {
+    *location = degrees.toDouble() + minutes.toDouble() / 60.0 + seconds.toDouble() / 3600.0; }
+
+  return (!degrees.isEmpty()) && (!minutes.isEmpty()) && (!seconds.isEmpty());
 }
 
 // ----------------------------------------------------------------------------

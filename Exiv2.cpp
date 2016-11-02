@@ -51,10 +51,10 @@ void Exiv2::reportData()
   QString length;
   QString value;
 
-  QString buffer = readAllStandardOutput();
+  QByteArray buffer = readAllStandardOutput();
 
   int i = 0;
-  while (i < buffer.length())
+  while (i < buffer.size())
   {
     skipSpaces(buffer, i);
 
@@ -79,19 +79,25 @@ void Exiv2::reportData()
   }
 }
 
-void Exiv2::skipSpaces(const QString &buffer, int &i)
+
+bool Exiv2::isSpace(char ch)
 {
-  while ((i < buffer.length()) && (buffer.at(i).isSpace()) && (buffer.at(i) != '\n') && (buffer.at(i) != '\r'))
+  return (ch == ' ') || (ch == '\t') || (ch == '\v') || (ch == '\0');
+}
+
+void Exiv2::skipSpaces(const QByteArray &buffer, int &i)
+{
+  while ((i < buffer.length()) && (isSpace(buffer.at(i))))
   {
     i++;
   }
 }
 
-void Exiv2::readTillSpace(const QString &buffer, int &i, QString &result)
+void Exiv2::readTillSpace(const QByteArray &buffer, int &i, QString &result)
 {
   result.clear();
 
-  while ((i < buffer.length()) && (!buffer.at(i).isSpace()))
+  while ((i < buffer.length()) && (!isSpace(buffer.at(i))))
   {
     result.append(buffer.at(i));
 
@@ -99,7 +105,7 @@ void Exiv2::readTillSpace(const QString &buffer, int &i, QString &result)
   }
 }
 
-void Exiv2::readTillEOL(const QString &buffer, int &i, QString &result)
+void Exiv2::readTillEOL(const QByteArray &buffer, int &i, QString &result)
 {
   result.clear();
 

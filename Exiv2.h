@@ -27,9 +27,12 @@ private slots:
   void done(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
-  void skipSpaces(const QString &buffer, int &i);
-  void readTillSpace(const QString &buffer, int &i, QString &result);
-  void readTillEOL(const QString &buffer, int &i, QString &result);
+  void skipSpaces(const QByteArray &buffer, int &i);
+  void readTillSpace(const QByteArray &buffer, int &i, QString &result);
+  void readTillEOL(const QByteArray &buffer, int &i, QString &result);
+
+  static
+  bool isSpace(char ch);
 
   ExivModel exivModel_;
 };
