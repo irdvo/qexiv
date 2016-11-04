@@ -14,6 +14,8 @@
 #include <QTextStream>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QListView>
+#include <QFileSystemModel>
 
 #if QT_VERSION >= 0x050000
 #include <QStandardPaths>
@@ -25,6 +27,7 @@
 MainWindow::MainWindow(int argc, char *argv[]) :
   _imageDialog(0),
   _imageFilename(""),
+  _imagePath(QDir::currentPath()),
   _exiv2(this)
 {
   _imageLabel = new QLabel;
@@ -163,10 +166,26 @@ void MainWindow::createDockWindows()
     addDockWidget(Qt::RightDockWidgetArea, dock);
   _windowMenu->addAction(dock->toggleViewAction());
 
-  dock = new QDockWidget(tr("Directory"), this);
-    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    addDockWidget(Qt::LeftDockWidgetArea, dock);;
-  _windowMenu->addAction(dock->toggleViewAction());
+  _directoryDock = new QDockWidget(tr("Images: %1").arg(QDir::currentPath()), this);
+    _directoryDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+
+     _fileSystemModel = new QFileSystemModel(this);
+     _fileSystemModel->setRootPath(QDir::currentPath());
+     _fileSystemModel->setFilter(QDir::AllDirs | QDir::Files);
+
+     QStringList fileSystemFilters; fileSystemFilters << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG";
+
+     _fileSystemModel->setNameFilters(fileSystemFilters);
+     _fileSystemModel->setNameFilterDisables(false);
+
+     _directoryView = new QListView(_directoryDock);
+    _directoryView->setModel(_fileSystemModel);
+    _directoryView->setRootIndex(_fileSystemModel->index(QDir::currentPath()));
+    connect(_directoryView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(selectInDirectory(const QModelIndex&)));
+
+    _directoryDock->setWidget(_directoryView);
+    addDockWidget(Qt::LeftDockWidgetArea, _directoryDock);;
+  _windowMenu->addAction(_directoryDock->toggleViewAction());
 
   dock = new QDockWidget(tr("Comment"), this);
     dock->setAllowedAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
@@ -268,25 +287,10 @@ void MainWindow::openFile()
 {
   if (_imageDialog == 0)
   {
-    _imageDialog = new QFileDialog(this, tr("Open image file"));
+    _imageDialog = new QFileDialog(this, tr("Open image file"), _imagePath);
 
     _imageDialog->setAcceptMode(QFileDialog::AcceptOpen);
     _imageDialog->setFileMode(QFileDialog::ExistingFile);
-
-#if QT_VERSION >= 0x050000
-    const QStringList imageDirectories = QStandardPaths::standardLocations(QStandardPaths::PicturesLocation);
-
-    if (imageDirectories.isEmpty())
-    {
-      _imageDialog->setDirectory(imageDirectories.last());
-    }
-    else
-    {
-      _imageDialog->setDirectory(QDir::currentPath());
-    }
-#else
-    _imageDialog->setDirectory(QDir::currentPath());
-#endif
 
 #if QT_VERSION >= 0x050200
     QStringList mimeFilters;
@@ -305,7 +309,11 @@ void MainWindow::openFile()
 
   if (_imageDialog->exec() == QDialog::Accepted)
   {
-    openImage(_imageDialog->selectedFiles().first());
+    QString filename = _imageDialog->selectedFiles().first();
+
+    _imagePath = QFileInfo(filename).path();
+
+    openImage(filename);
   }
 
   _imageDialog->close();
@@ -361,7 +369,7 @@ void MainWindow::showMap()
 
   if (_exiv2.exivModel().getGPSLocation(&latitude, &longitude))
   {
-    QString url = QString("http://www.openstreetmap.org/?mlat=%1&mlon=%2#map=18/%3/%4")
+    QString url = QString("http://www.openstreetmap.org/?mlat=%1&mlon=%2#map=16/%3/%4")
         .arg(latitude,  0, 'f', 7)
         .arg(longitude, 0, 'f', 7)
         .arg(latitude,  0, 'f', 7)
@@ -375,6 +383,25 @@ void MainWindow::showMap()
   else
   {
     QMessageBox::warning(this, tr("Missing GPS location"), tr("There was no GPS location found in the image."));
+  }
+}
+
+void MainWindow::selectInDirectory(const QModelIndex &index)
+{
+  QString filename = _fileSystemModel->fileInfo(index).absoluteFilePath();
+
+  if (_fileSystemModel->fileInfo(index).isDir())
+  {
+    if (filename != "/..")
+    {
+      _directoryDock->setWindowTitle(tr("Images: %1").arg(filename));
+
+      _directoryView->setRootIndex(_fileSystemModel->setRootPath(filename));
+    }
+  }
+  else
+  {
+    openImage(filename);
   }
 }
 

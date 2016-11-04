@@ -15,6 +15,9 @@ class QScrollArea;
 class QFileDialog;
 class QScrollBar;
 class QTableView;
+class QListView;
+class QFileSystemModel;
+class QDockWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -34,6 +37,7 @@ private slots:
   void setFullSize();
   void fitToWindow();
   void showMap();
+  void selectInDirectory(const QModelIndex &);
 
 private:
   void createActions();
@@ -71,11 +75,16 @@ private:
 
   QTableView *exifView;
 
+  QDockWidget *_directoryDock;
+  QListView   *_directoryView;
+  QFileSystemModel *_fileSystemModel;
+
   // Image
   QFileDialog *_imageDialog;
   QLabel      *_imageLabel;
   QScrollArea *_imageScrollArea;
   QString      _imageFilename;
+  QString      _imagePath;
   QImage       _image;
   double       _scaleFactor;
 
