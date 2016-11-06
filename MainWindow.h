@@ -27,6 +27,9 @@ public:
   MainWindow(int argc, char *argv[]);
   ~MainWindow();
 
+protected:
+  void closeEvent(QCloseEvent *event);
+
 private slots:
   void openFile();
   void about();
@@ -55,6 +58,9 @@ private:
 
   void setImage(const QImage &image);
   void scaleImage(double factor);
+
+  void restoreSettings();
+  void saveSettings();
 
   QMenu       *_fileMenu;
   QMenu       *_imageMenu;

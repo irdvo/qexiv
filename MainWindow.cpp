@@ -16,6 +16,7 @@
 #include <QUrl>
 #include <QListView>
 #include <QFileSystemModel>
+#include <QSettings>
 
 #if QT_VERSION >= 0x050000
 #include <QStandardPaths>
@@ -30,6 +31,9 @@ MainWindow::MainWindow(int argc, char *argv[]) :
   _imagePath(QDir::currentPath()),
   _exiv2(this)
 {
+  QCoreApplication::setOrganizationName("qexiv");
+  QCoreApplication::setApplicationName("qexiv");
+
   _imageLabel = new QLabel;
     _imageLabel->setBackgroundRole(QPalette::Base);
     _imageLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
@@ -51,6 +55,8 @@ MainWindow::MainWindow(int argc, char *argv[]) :
   createToolBars();
   createStatusBar();
   createDockWindows();
+
+  restoreSettings();
 
   setTitle();
 
@@ -151,7 +157,8 @@ void MainWindow::createStatusBar()
 
 void MainWindow::createDockWindows()
 {
-  QDockWidget *dock = new QDockWidget(tr("Exif metadata"), this);
+  QDockWidget *dock = new QDockWidget(tr("Metadata"), this);
+    dock->setObjectName("Metadata");
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
     exifView = new QTableView(dock);
@@ -167,6 +174,7 @@ void MainWindow::createDockWindows()
   _windowMenu->addAction(dock->toggleViewAction());
 
   _directoryDock = new QDockWidget(tr("Images: %1").arg(QDir::currentPath()), this);
+    _directoryDock->setObjectName("Images");
     _directoryDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
      _fileSystemModel = new QFileSystemModel(this);
@@ -188,6 +196,7 @@ void MainWindow::createDockWindows()
   _windowMenu->addAction(_directoryDock->toggleViewAction());
 
   dock = new QDockWidget(tr("Comment"), this);
+    dock->setObjectName("Comment");
     dock->setAllowedAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
     addDockWidget(Qt::BottomDockWidgetArea, dock);
   _windowMenu->addAction(dock->toggleViewAction());
@@ -413,6 +422,31 @@ void MainWindow::about()
              "This program comes with ABSOLUTELY NO WARRANTY;\n"
              "This is free software, and you are welcome to redistribute it "
              "under certain conditions; see the license for details."));
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    saveSettings();
+
+    QMainWindow::closeEvent(event);
+}
+
+// -- Settings ----------------------------------------------------------------
+
+void MainWindow::saveSettings()
+{
+  QSettings settings;
+
+  settings.setValue("MainWindow/Geometry", saveGeometry());
+  settings.setValue("MainWindow/State",    saveState()   );
+}
+
+void MainWindow::restoreSettings()
+{
+  QSettings settings;
+
+  restoreGeometry(settings.value("MainWindow/Geometry").toByteArray());
+  restoreState   (settings.value("MainWindow/State"   ).toByteArray());
 }
 
 // ----------------------------------------------------------------------------
