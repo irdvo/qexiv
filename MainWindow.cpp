@@ -26,7 +26,6 @@
 
 
 MainWindow::MainWindow(int argc, char *argv[]) :
-  _imageDialog(0),
   _imageFilename(""),
   _imagePath(QDir::currentPath()),
   _exiv2(this)
@@ -50,6 +49,14 @@ MainWindow::MainWindow(int argc, char *argv[]) :
 
   setCentralWidget(_imageScrollArea);
 
+  if (argc > 1)
+  {
+    if (QFileInfo(argv[1]).isDir())
+    {
+      _imagePath = argv[1];
+    }
+  }
+
   createActions();
   createMenus();
   createToolBars();
@@ -59,11 +66,6 @@ MainWindow::MainWindow(int argc, char *argv[]) :
   restoreSettings();
 
   setTitle();
-
-  if (argc > 1)
-  {
-    openImage(argv[1]);
-  }
 }
 
 MainWindow::~MainWindow()
@@ -74,9 +76,9 @@ MainWindow::~MainWindow()
 // -- GUI ---------------------------------------------------------------------
 void MainWindow::createActions()
 {
-  _openFileAction = new QAction(tr("&Open File..."), this);
-  _openFileAction->setStatusTip(tr("Open an image file"));
-  connect(_openFileAction, SIGNAL(triggered()), this, SLOT(openFile()));
+  _openDirectoryAction = new QAction(tr("&Open Directory..."), this);
+  _openDirectoryAction->setStatusTip(tr("Open a directory with image files"));
+  connect(_openDirectoryAction, SIGNAL(triggered()), this, SLOT(openDirectory()));
 
   _quitAction = new QAction(tr("&Quit"), this);
   _quitAction->setShortcuts(QKeySequence::Quit);
@@ -126,7 +128,7 @@ void MainWindow::createActions()
 void MainWindow::createMenus()
 {
   _fileMenu = menuBar()->addMenu(tr("&File"));
-  _fileMenu->addAction(_openFileAction);
+  _fileMenu->addAction(_openDirectoryAction);
   _fileMenu->addSeparator();
   _fileMenu->addAction(_quitAction);
 
@@ -178,8 +180,8 @@ void MainWindow::createDockWindows()
     _directoryDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
      _fileSystemModel = new QFileSystemModel(this);
-     _fileSystemModel->setRootPath(QDir::currentPath());
-     _fileSystemModel->setFilter(QDir::AllDirs | QDir::Files);
+     _fileSystemModel->setRootPath(_imagePath);
+     _fileSystemModel->setFilter(QDir::AllDirs | QDir::Files | QDir::NoDot);
 
      QStringList fileSystemFilters; fileSystemFilters << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG";
 
@@ -188,7 +190,7 @@ void MainWindow::createDockWindows()
 
      _directoryView = new QListView(_directoryDock);
     _directoryView->setModel(_fileSystemModel);
-    _directoryView->setRootIndex(_fileSystemModel->index(QDir::currentPath()));
+    _directoryView->setRootIndex(_fileSystemModel->index(_imagePath));
     connect(_directoryView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(selectInDirectory(const QModelIndex&)));
 
     _directoryDock->setWidget(_directoryView);
@@ -292,40 +294,21 @@ void MainWindow::adjustScrollBar(QScrollBar *scrollBar, double factor)
 
 // -- Slots -------------------------------------------------------------------
 
-void MainWindow::openFile()
+void MainWindow::openDirectory()
 {
-  if (_imageDialog == 0)
+  QFileDialog directoryDialog(this, tr("Open image directory"), _imagePath);
+
+  directoryDialog.setAcceptMode(QFileDialog::AcceptOpen);
+  directoryDialog.setFileMode  (QFileDialog::Directory);
+
+  if (directoryDialog.exec() == QDialog::Accepted)
   {
-    _imageDialog = new QFileDialog(this, tr("Open image file"), _imagePath);
+    _imagePath = directoryDialog.selectedFiles().first();
 
-    _imageDialog->setAcceptMode(QFileDialog::AcceptOpen);
-    _imageDialog->setFileMode(QFileDialog::ExistingFile);
-
-#if QT_VERSION >= 0x050200
-    QStringList mimeFilters;
-
-    mimeFilters << "image/jpeg";
-
-    _imageDialog->setMimeTypeFilters(mimeFilters);
-#else
-    QStringList nameFilters;
-
-    nameFilters << "Image files (*.jpg *.JPG *.jpeg *.JPEG)";
-
-    _imageDialog->setNameFilters(nameFilters);
-#endif
+    _directoryView->setRootIndex(_fileSystemModel->setRootPath(_imagePath));
   }
 
-  if (_imageDialog->exec() == QDialog::Accepted)
-  {
-    QString filename = _imageDialog->selectedFiles().first();
-
-    _imagePath = QFileInfo(filename).path();
-
-    openImage(filename);
-  }
-
-  _imageDialog->close();
+  directoryDialog.close();
 }
 
 void MainWindow::zoomIn()

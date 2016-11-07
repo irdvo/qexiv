@@ -31,7 +31,7 @@ protected:
   void closeEvent(QCloseEvent *event);
 
 private slots:
-  void openFile();
+  void openDirectory();
   void about();
 
   void zoomIn();
@@ -67,7 +67,7 @@ private:
   QMenu       *_windowMenu;
   QMenu       *_helpMenu;
 
-  QAction     *_openFileAction;
+  QAction     *_openDirectoryAction;
   QAction     *_quitAction;
   QAction     *_aboutAction;
   QAction     *_aboutQtAction;
@@ -86,7 +86,6 @@ private:
   QFileSystemModel *_fileSystemModel;
 
   // Image
-  QFileDialog *_imageDialog;
   QLabel      *_imageLabel;
   QScrollArea *_imageScrollArea;
   QString      _imageFilename;
