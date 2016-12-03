@@ -14,7 +14,7 @@ ExivModel::~ExivModel()
 // == QAbstractTableModel implementation ======================================
 int ExivModel::rowCount(const QModelIndex&) const
 {
-  return exivItems_.size();
+  return _exivItems.size();
 }
 
 int ExivModel::columnCount(const QModelIndex&) const
@@ -28,11 +28,11 @@ QVariant ExivModel::data(const QModelIndex& index, int role) const
   {
     if (index.column() == 0)
     {
-      return exivItems_.at(index.row()).key_;
+      return _exivItems.at(index.row())._key;
     }
     else if (index.column() == 1)
     {
-      return exivItems_.at(index.row()).value_;
+      return _exivItems.at(index.row())._value;
     }
   }
   return QVariant::Invalid;
@@ -62,13 +62,13 @@ void ExivModel::clear()
 {
   beginResetModel();
 
-  exivItems_.clear();
+  _exivItems.clear();
 }
 
 // -- Add one line of data in the stored items --------------------------------
 void ExivModel::add(const QString &key, const QString &type, const QString &length, const QString &value)
 {
-  exivItems_.push_back(ExivItem(key, type, length, value));
+  _exivItems.push_back(ExivItem(key, type, length, value));
 }
 
 // -- Indicate the adding of items is done ------------------------------------
@@ -86,15 +86,15 @@ bool ExivModel::getGPSLocation(double *latitude, double *longitude)
   bool hasLatitude  = false;
   bool hasLongitude = false;
 
-  for (ExivItems::iterator item = exivItems_.begin(); item != exivItems_.end(); ++item)
+  for (ExivItems::iterator item = _exivItems.begin(); item != _exivItems.end(); ++item)
   {
-    if (item->key_.endsWith("GPSLatitude", Qt::CaseInsensitive))
+    if (item->_key.endsWith("GPSLatitude", Qt::CaseInsensitive))
     {
-      hasLatitude = scanGPSLocation(latitude, item->value_);
+      hasLatitude = scanGPSLocation(latitude, item->_value);
     }
-    if (item->key_.endsWith("GPSLongitude", Qt::CaseInsensitive))
+    if (item->_key.endsWith("GPSLongitude", Qt::CaseInsensitive))
     {
-      hasLongitude = scanGPSLocation(longitude, item->value_);
+      hasLongitude = scanGPSLocation(longitude, item->_value);
     }
 
     if (hasLatitude && hasLongitude)

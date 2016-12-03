@@ -1,13 +1,11 @@
 #ifndef _EXIV2_H
 #define _EXIV2_H
 
-#include <QAbstractTableModel>
-#include <QVariant>
 #include <QProcess>
 
 #include "ExivModel.h"
 
-class Exiv2 : public QProcess // QAbstractTableModel
+class Exiv2 : public QProcess
 {
   Q_OBJECT
 
@@ -16,7 +14,7 @@ public:
   ~Exiv2();
 
   // -- Model -----------------------------------------------------------------
-  ExivModel &exivModel() { return exivModel_; }
+  ExivModel &exivModel() { return _exivModel; }
 
   // -- Commands --------------------------------------------------------------
   bool fetch(const QString &imageFilename);
@@ -34,7 +32,7 @@ private:
   static
   bool isSpace(char ch);
 
-  ExivModel exivModel_;
+  ExivModel _exivModel;
 };
 
 #endif

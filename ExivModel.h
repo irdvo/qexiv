@@ -2,7 +2,6 @@
 #define _EXIVMODEL_H
 
 #include <QAbstractTableModel>
-#include <QVariant>
 #include <QVector>
 
 class ExivModel : public QAbstractTableModel
@@ -26,7 +25,7 @@ public:
   void done();
 
   // -- Getters ---------------------------------------------------------------
-  int length() const { return exivItems_.size(); }
+  int length() const { return _exivItems.size(); }
 
   bool getGPSLocation(double *latitude = 0, double *longitude = 0);
 
@@ -39,24 +38,24 @@ private:
   {
     ExivItem(const QString &key, const QString &type, const QString &length, const QString &value)
     {
-      key_    = key;
-      type_   = type;
-      length_ = length;
-      value_  = value;
+      _key    = key;
+      _type   = type;
+      _length = length;
+      _value  = value;
     }
     ExivItem()
     {
     }
 
-    QString key_;
-    QString type_;
-    QString length_;
-    QString value_;
+    QString _key;
+    QString _type;
+    QString _length;
+    QString _value;
   };
 
   typedef QVector<ExivItem> ExivItems;
 
-  ExivItems exivItems_;
+  ExivItems _exivItems;
 };
 
 #endif

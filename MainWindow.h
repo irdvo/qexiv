@@ -79,7 +79,7 @@ private:
   QAction     *_fitToWindowAction;
   QAction     *_showMapAction;
 
-  QTableView *exifView;
+  QTableView  *_exifView;
 
   QDockWidget *_directoryDock;
   QListView   *_directoryView;

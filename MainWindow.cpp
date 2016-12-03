@@ -107,7 +107,7 @@ void MainWindow::createActions()
 
   _fitToWindowAction = new QAction(tr("&Fit to Window"), this);
   _fitToWindowAction->setCheckable(true);
-  _fitToWindowAction->setShortcut(tr("Ctrl+F"));
+  _fitToWindowAction->setShortcut(tr("Ctrl+W"));
   _fitToWindowAction->setEnabled(false);
   connect(_fitToWindowAction, SIGNAL(triggered()), this, SLOT(fitToWindow()));
 
@@ -163,15 +163,15 @@ void MainWindow::createDockWindows()
     dock->setObjectName("Metadata");
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
-    exifView = new QTableView(dock);
+    _exifView = new QTableView(dock);
 #if QT_VERSION >= 0x050000
-    exifView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    _exifView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 #else
-    exifView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+    _exifView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
 #endif
-    exifView->setModel(&_exiv2.exivModel());
+    _exifView->setModel(&_exiv2.exivModel());
 
-    dock->setWidget(exifView);
+    dock->setWidget(_exifView);
     addDockWidget(Qt::RightDockWidgetArea, dock);
   _windowMenu->addAction(dock->toggleViewAction());
 

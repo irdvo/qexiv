@@ -4,7 +4,7 @@
 
 Exiv2::Exiv2(QObject *parent = 0) :
   QProcess(parent),
-  exivModel_()
+  _exivModel()
 {
   /// todo: better error reporting
   connect(this, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(done(int, QProcess::ExitStatus)));
@@ -24,7 +24,7 @@ bool Exiv2::fetch(const QString &imageFilename)
 
   if (state() == QProcess::NotRunning)
   {
-    exivModel_.clear();
+    _exivModel.clear();
 
     QStringList parameters;
 
@@ -74,7 +74,7 @@ void Exiv2::reportData()
 
     if (key.length() > 0)
     {
-      exivModel_.add(key, type, length, value);
+      _exivModel.add(key, type, length, value);
     }
   }
 }
@@ -131,12 +131,12 @@ void Exiv2::readTillEOL(const QByteArray &buffer, int &i, QString &result)
 
 void Exiv2::done(int, ExitStatus)
 {
-  if (exivModel_.length() == 0)
+  if (_exivModel.length() == 0)
   {
     QMessageBox::warning(0, tr("Exif metadata"), tr("No exif metadata present in this image"));
   }
 
-  exivModel_.done();
+  _exivModel.done();
 }
 
 // ----------------------------------------------------------------------------
