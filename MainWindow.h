@@ -4,7 +4,8 @@
 #include <QMainWindow>
 #include <QImage>
 
-#include "Exiv2.h"
+#include "Exiv2Fetcher.h"
+#include "Exiv2Updater.h"
 
 class QAction;
 class QListWidget;
@@ -18,6 +19,8 @@ class QTableView;
 class QListView;
 class QFileSystemModel;
 class QDockWidget;
+class QPushButton;
+class QLineEdit;
 
 class MainWindow : public QMainWindow
 {
@@ -41,6 +44,10 @@ private slots:
   void fitToWindow();
   void showMap();
   void selectInDirectory(const QModelIndex &);
+  void updateDescription();
+  void imageUpdated();
+  void exifFetched();
+  void directoryLoaded(const QString &);
 
 private:
   void createActions();
@@ -79,11 +86,19 @@ private:
   QAction     *_fitToWindowAction;
   QAction     *_showMapAction;
 
+  // Properties dock
   QTableView  *_exifView;
 
+  // Directory dock
   QDockWidget *_directoryDock;
   QListView   *_directoryView;
   QFileSystemModel *_fileSystemModel;
+
+  // Description dock
+  QPushButton *_prevButton;
+  QLineEdit   *_imageDescription;
+  QPushButton *_setButton;
+  QPushButton *_nextButton;
 
   // Image
   QLabel      *_imageLabel;
@@ -94,7 +109,8 @@ private:
   double       _scaleFactor;
 
   // Exiv2
-  Exiv2        _exiv2;
+  Exiv2Fetcher _exiv2Fetcher;
+  Exiv2Updater _exiv2Updater;
 };
 
 #endif

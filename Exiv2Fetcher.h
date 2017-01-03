@@ -1,17 +1,17 @@
-#ifndef _EXIV2_H
-#define _EXIV2_H
+#ifndef _EXIV2FETCHER_H
+#define _EXIV2FETCHER_H
 
 #include <QProcess>
 
 #include "ExivModel.h"
 
-class Exiv2 : public QProcess
+class Exiv2Fetcher : public QProcess
 {
   Q_OBJECT
 
 public:
-  Exiv2(QObject *parent);
-  ~Exiv2();
+  Exiv2Fetcher(QObject *parent = 0);
+  ~Exiv2Fetcher();
 
   // -- Model -----------------------------------------------------------------
   ExivModel &exivModel() { return _exivModel; }
@@ -23,6 +23,9 @@ private slots:
   void reportError();
   void reportData();
   void done(int exitCode, QProcess::ExitStatus exitStatus);
+
+signals:
+  void fetched();
 
 private:
   void skipSpaces(const QByteArray &buffer, int &i);

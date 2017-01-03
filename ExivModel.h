@@ -29,10 +29,12 @@ public:
 
   bool getGPSLocation(double *latitude = 0, double *longitude = 0);
 
-  static
-  bool scanGPSLocation(double *location, const QString &value);
+  QString getImageDescription();
 
 private:
+
+  static
+  bool scanGPSLocation(double *location, const QString &value);
 
   struct ExivItem
   {

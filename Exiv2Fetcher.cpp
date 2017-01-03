@@ -1,8 +1,14 @@
-#include <QMessageBox>
+#include <QtGlobal>
+#if QT_VERSION >= 0x050000
+#include <QtWidgets>
+#else
+#include <QtGui>
+#endif
 
-#include "Exiv2.h"
+#include "Exiv2Fetcher.h"
 
-Exiv2::Exiv2(QObject *parent = 0) :
+
+Exiv2Fetcher::Exiv2Fetcher(QObject *parent) :
   QProcess(parent),
   _exivModel()
 {
@@ -12,13 +18,13 @@ Exiv2::Exiv2(QObject *parent = 0) :
   connect(this, SIGNAL(readyReadStandardOutput()),           this, SLOT(reportData()));
 }
 
-Exiv2::~Exiv2()
+Exiv2Fetcher::~Exiv2Fetcher()
 {
 
 }
 
 // -- Fetch the exif metadata for the image -----------------------------------
-bool Exiv2::fetch(const QString &imageFilename)
+bool Exiv2Fetcher::fetch(const QString &imageFilename)
 {
   bool ok = false;
 
@@ -37,14 +43,14 @@ bool Exiv2::fetch(const QString &imageFilename)
 }
 
 // -- Slots -------------------------------------------------------------------
-void Exiv2::reportError()
+void Exiv2Fetcher::reportError()
 {
   QByteArray buffer = readAllStandardError();
 
   QMessageBox::critical(0, "exiv2 error", buffer);
 }
 
-void Exiv2::reportData()
+void Exiv2Fetcher::reportData()
 {
   QString key;
   QString type;
@@ -80,12 +86,12 @@ void Exiv2::reportData()
 }
 
 
-bool Exiv2::isSpace(char ch)
+bool Exiv2Fetcher::isSpace(char ch)
 {
   return (ch == ' ') || (ch == '\t') || (ch == '\v') || (ch == '\0');
 }
 
-void Exiv2::skipSpaces(const QByteArray &buffer, int &i)
+void Exiv2Fetcher::skipSpaces(const QByteArray &buffer, int &i)
 {
   while ((i < buffer.length()) && (isSpace(buffer.at(i))))
   {
@@ -93,7 +99,7 @@ void Exiv2::skipSpaces(const QByteArray &buffer, int &i)
   }
 }
 
-void Exiv2::readTillSpace(const QByteArray &buffer, int &i, QString &result)
+void Exiv2Fetcher::readTillSpace(const QByteArray &buffer, int &i, QString &result)
 {
   result.clear();
 
@@ -105,7 +111,7 @@ void Exiv2::readTillSpace(const QByteArray &buffer, int &i, QString &result)
   }
 }
 
-void Exiv2::readTillEOL(const QByteArray &buffer, int &i, QString &result)
+void Exiv2Fetcher::readTillEOL(const QByteArray &buffer, int &i, QString &result)
 {
   result.clear();
 
@@ -129,14 +135,15 @@ void Exiv2::readTillEOL(const QByteArray &buffer, int &i, QString &result)
   result.trimmed();
 }
 
-void Exiv2::done(int, ExitStatus)
+void Exiv2Fetcher::done(int, ExitStatus)
 {
   if (_exivModel.length() == 0)
   {
-    QMessageBox::warning(0, tr("Exif metadata"), tr("No exif metadata present in this image"));
   }
 
   _exivModel.done();
+
+  emit fetched();
 }
 
 // ----------------------------------------------------------------------------

@@ -1,25 +1,8 @@
-#include <QApplication>
-#include <QTextEdit>
-#include <QDockWidget>
-#include <QMenu>
-#include <QMenuBar>
-#include <QMessageBox>
-#include <QLabel>
-#include <QScrollArea>
-#include <QFileDialog>
-#include <QImageReader>
-#include <QScrollBar>
-#include <QTableView>
-#include <QHeaderView>
-#include <QTextStream>
-#include <QDesktopServices>
-#include <QUrl>
-#include <QListView>
-#include <QFileSystemModel>
-#include <QSettings>
-
+#include <QtGlobal>
 #if QT_VERSION >= 0x050000
-#include <QStandardPaths>
+#include <QtWidgets>
+#else
+#include <QtGui>
 #endif
 
 #include "MainWindow.h"
@@ -28,7 +11,8 @@
 MainWindow::MainWindow(int argc, char *argv[]) :
   _imageFilename(""),
   _imagePath(QDir::currentPath()),
-  _exiv2(this)
+  _exiv2Fetcher(this),
+  _exiv2Updater(this)
 {
   QCoreApplication::setOrganizationName("qexiv");
   QCoreApplication::setApplicationName("qexiv");
@@ -46,6 +30,9 @@ MainWindow::MainWindow(int argc, char *argv[]) :
     _imageScrollArea->setAlignment(Qt::AlignCenter);
 
   _scaleFactor = 1.0;
+
+  connect(&_exiv2Fetcher, SIGNAL(fetched()), this, SLOT(exifFetched()));
+  connect(&_exiv2Updater, SIGNAL(updated()), this, SLOT(imageUpdated()));
 
   setCentralWidget(_imageScrollArea);
 
@@ -66,6 +53,7 @@ MainWindow::MainWindow(int argc, char *argv[]) :
   restoreSettings();
 
   setTitle();
+  updateActions();
 }
 
 MainWindow::~MainWindow()
@@ -73,7 +61,7 @@ MainWindow::~MainWindow()
 
 }
 
-// -- GUI ---------------------------------------------------------------------
+// == GUI =====================================================================
 void MainWindow::createActions()
 {
   _openDirectoryAction = new QAction(tr("&Open Directory..."), this);
@@ -169,7 +157,7 @@ void MainWindow::createDockWindows()
 #else
     _exifView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
 #endif
-    _exifView->setModel(&_exiv2.exivModel());
+    _exifView->setModel(&_exiv2Fetcher.exivModel());
 
     dock->setWidget(_exifView);
     addDockWidget(Qt::RightDockWidgetArea, dock);
@@ -181,12 +169,14 @@ void MainWindow::createDockWindows()
 
      _fileSystemModel = new QFileSystemModel(this);
      _fileSystemModel->setRootPath(_imagePath);
-     _fileSystemModel->setFilter(QDir::AllDirs | QDir::Files | QDir::NoDot);
+     //_fileSystemModel->setFilter(QDir::AllDirs | QDir::Files | QDir::NoDot);
+      _fileSystemModel->setFilter(QDir::Files | QDir::NoDotAndDotDot);
 
      QStringList fileSystemFilters; fileSystemFilters << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG";
 
      _fileSystemModel->setNameFilters(fileSystemFilters);
      _fileSystemModel->setNameFilterDisables(false);
+     connect(_fileSystemModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(directoryLoaded(const QString&)));
 
      _directoryView = new QListView(_directoryDock);
     _directoryView->setModel(_fileSystemModel);
@@ -197,9 +187,37 @@ void MainWindow::createDockWindows()
     addDockWidget(Qt::LeftDockWidgetArea, _directoryDock);;
   _windowMenu->addAction(_directoryDock->toggleViewAction());
 
-  dock = new QDockWidget(tr("Comment"), this);
-    dock->setObjectName("Comment");
+  dock = new QDockWidget(tr("Description"), this);
+    dock->setObjectName("Description");
     dock->setAllowedAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
+
+    QHBoxLayout *layout = new QHBoxLayout;
+
+    _prevButton = new QPushButton("<<");
+    // connect
+    layout->addWidget(_prevButton);
+
+    layout->addSpacing(20);
+
+    QLabel *label = new QLabel(tr("Image Description:"));
+    layout->addWidget(label);
+
+    _imageDescription = new QLineEdit;
+    layout->addWidget(_imageDescription);
+
+    _setButton = new QPushButton(tr("Set"));
+    connect(_setButton, SIGNAL(clicked()), this, SLOT(updateDescription()));
+    layout->addWidget(_setButton);
+
+    layout->addSpacing(20);
+
+    _nextButton = new QPushButton(">>");
+    //_connect
+    layout->addWidget(_nextButton);
+
+    QWidget *widget = new QWidget;
+    widget->setLayout(layout);
+    dock->setWidget(widget);
     addDockWidget(Qt::BottomDockWidgetArea, dock);
   _windowMenu->addAction(dock->toggleViewAction());
 }
@@ -211,6 +229,7 @@ void MainWindow::updateActions()
   _setNormalSizeAction->setEnabled(!_fitToWindowAction->isChecked());
   _setFullSizeAction  ->setEnabled(!_fitToWindowAction->isChecked());
   _showMapAction      ->setEnabled(!_imageFilename.isEmpty());
+  _setButton          ->setEnabled(!_imageFilename.isEmpty());
 }
 
 void MainWindow::setTitle()
@@ -225,7 +244,7 @@ void MainWindow::setTitle()
   setWindowTitle(title);
 }
 
-// -- Image -------------------------------------------------------------------
+// == Image ===================================================================
 void MainWindow::openImage(const QString &filename)
 {
   QImageReader reader(filename);
@@ -248,7 +267,7 @@ void MainWindow::openImage(const QString &filename)
 
     setTitle();
 
-    _exiv2.fetch(_imageFilename);
+    _exiv2Fetcher.fetch(_imageFilename);
 
     setImage(image);
   }
@@ -292,7 +311,7 @@ void MainWindow::adjustScrollBar(QScrollBar *scrollBar, double factor)
   scrollBar->setValue(int(factor * scrollBar->value() + ((factor - 1) * scrollBar->pageStep()/2)));
 }
 
-// -- Slots -------------------------------------------------------------------
+// == Slots ===================================================================
 
 void MainWindow::openDirectory()
 {
@@ -330,7 +349,6 @@ void MainWindow::setNormalSize()
                        (double) _imageScrollArea->size().height() / (double) _image.size().height());
 
   scaleImage(factor * 0.95);
-
 }
 
 void MainWindow::setFullSize()
@@ -359,7 +377,7 @@ void MainWindow::showMap()
   double latitude;
   double longitude;
 
-  if (_exiv2.exivModel().getGPSLocation(&latitude, &longitude))
+  if (_exiv2Fetcher.exivModel().getGPSLocation(&latitude, &longitude))
   {
     QString url = QString("http://www.openstreetmap.org/?mlat=%1&mlon=%2#map=16/%3/%4")
         .arg(latitude,  0, 'f', 7)
@@ -376,6 +394,11 @@ void MainWindow::showMap()
   {
     QMessageBox::warning(this, tr("Missing GPS location"), tr("There was no GPS location found in the image."));
   }
+}
+
+void MainWindow::directoryLoaded(const QString &)
+{
+  // Directory with image files is loaded
 }
 
 void MainWindow::selectInDirectory(const QModelIndex &index)
@@ -395,6 +418,34 @@ void MainWindow::selectInDirectory(const QModelIndex &index)
   {
     openImage(filename);
   }
+
+  //QMessageBox::information(0, "Info", QString("row:%1").arg(_directoryView->selectionModel()->currentIndex().row()));
+  //QMessageBox::information(0, "Info", QString("size:%1").arg(_directoryView->model()->rowCount(_directoryView->selectionModel()->currentIndex().parent())));
+}
+
+void MainWindow::updateDescription()
+{
+  // User requested an update of the description of the current image
+  _exiv2Updater.update(_imageFilename,  _imageDescription->text());
+}
+
+void MainWindow::exifFetched()
+{
+  // Exif data of image is fetched
+  if (_exiv2Fetcher.exivModel().length() > 0)
+  {
+    _imageDescription->setText(_exiv2Fetcher.exivModel().getImageDescription());
+  }
+  else
+  {
+    QMessageBox::warning(0, tr("Exif metadata"), tr("No exif metadata present in this image"));
+  }
+}
+
+void MainWindow::imageUpdated()
+{
+  // Image description is updated, refetch the exif info
+  _exiv2Fetcher.fetch(_imageFilename);
 }
 
 void MainWindow::about()
@@ -414,7 +465,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
-// -- Settings ----------------------------------------------------------------
+// == Settings ================================================================
 
 void MainWindow::saveSettings()
 {

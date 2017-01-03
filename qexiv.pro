@@ -7,11 +7,13 @@ equals(QT_MAJOR_VERSION,5) {
 }
 SOURCES += main.cpp \
            MainWindow.cpp\
-           Exiv2.cpp \
-           ExivModel.cpp
+           Exiv2Fetcher.cpp \
+           ExivModel.cpp\
+           Exiv2Updater.cpp
 HEADERS += MainWindow.h\
-           Exiv2.h \
-           ExivModel.h
+           Exiv2Fetcher.h \
+           ExivModel.h\
+           Exiv2Updater.h
 TARGET   = qexiv
 
 message(Includepath: $$INCLUDEPATH)

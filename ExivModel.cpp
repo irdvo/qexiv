@@ -1,6 +1,12 @@
+#include <QtGlobal>
+#if QT_VERSION >= 0x050000
+#include <QtWidgets>
+#else
+#include <QtGui>
+#endif
+
 #include "ExivModel.h"
 
-#include <QMessageBox>
 
 ExivModel::ExivModel() :
   QAbstractTableModel()
@@ -106,6 +112,19 @@ bool ExivModel::getGPSLocation(double *latitude, double *longitude)
   return (hasLatitude && hasLongitude);
 }
 
+QString ExivModel::getImageDescription()
+{
+  for (ExivItems::iterator item = _exivItems.begin(); item != _exivItems.end(); ++item)
+  {
+    if (item->_key.endsWith("ImageDescription", Qt::CaseInsensitive))
+    {
+      return item->_value;
+    }
+  }
+
+  return "";
+}
+
 bool ExivModel::scanGPSLocation(double *location, const QString &value)
 {
   QString degrees;
@@ -140,7 +159,8 @@ bool ExivModel::scanGPSLocation(double *location, const QString &value)
 
   if (location != 0)
   {
-    *location = degrees.toDouble() + minutes.toDouble() / 60.0 + seconds.toDouble() / 3600.0; }
+    *location = degrees.toDouble() + minutes.toDouble() / 60.0 + seconds.toDouble() / 3600.0;
+  }
 
   return (!degrees.isEmpty()) && (!minutes.isEmpty()) && (!seconds.isEmpty());
 }
