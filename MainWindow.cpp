@@ -168,20 +168,20 @@ void MainWindow::createDockWindows()
     _directoryDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
      _fileSystemModel = new QFileSystemModel(this);
-     _fileSystemModel->setRootPath(_imagePath);
      //_fileSystemModel->setFilter(QDir::AllDirs | QDir::Files | QDir::NoDot);
-      _fileSystemModel->setFilter(QDir::Files | QDir::NoDotAndDotDot);
+     _fileSystemModel->setFilter(QDir::Files); // | QDir::NoDotAndDotDot);
 
      QStringList fileSystemFilters; fileSystemFilters << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG";
 
      _fileSystemModel->setNameFilters(fileSystemFilters);
      _fileSystemModel->setNameFilterDisables(false);
+     _fileSystemModel->setRootPath(_imagePath);
      connect(_fileSystemModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(directoryLoaded(const QString&)));
 
      _directoryView = new QListView(_directoryDock);
     _directoryView->setModel(_fileSystemModel);
     _directoryView->setRootIndex(_fileSystemModel->index(_imagePath));
-    connect(_directoryView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(selectInDirectory(const QModelIndex&)));
+    connect(_directoryView, SIGNAL(activated(const QModelIndex&)), this, SLOT(selectInDirectory(const QModelIndex&)));
 
     _directoryDock->setWidget(_directoryView);
     addDockWidget(Qt::LeftDockWidgetArea, _directoryDock);;
@@ -194,7 +194,7 @@ void MainWindow::createDockWindows()
     QHBoxLayout *layout = new QHBoxLayout;
 
     _prevButton = new QPushButton("<<");
-    // connect
+    connect(_prevButton, SIGNAL(clicked()), this, SLOT(selectPrevImage()));
     layout->addWidget(_prevButton);
 
     layout->addSpacing(20);
@@ -212,7 +212,7 @@ void MainWindow::createDockWindows()
     layout->addSpacing(20);
 
     _nextButton = new QPushButton(">>");
-    //_connect
+    connect(_nextButton, SIGNAL(clicked()), this, SLOT(selectNextImage()));
     layout->addWidget(_nextButton);
 
     QWidget *widget = new QWidget;
@@ -319,10 +319,15 @@ void MainWindow::openDirectory()
 
   directoryDialog.setAcceptMode(QFileDialog::AcceptOpen);
   directoryDialog.setFileMode  (QFileDialog::Directory);
+  directoryDialog.setOption    (QFileDialog::ShowDirsOnly);
 
   if (directoryDialog.exec() == QDialog::Accepted)
   {
     _imagePath = directoryDialog.selectedFiles().first();
+
+    _directoryDock->setWindowTitle(tr("Images: %1").arg(_imagePath));
+
+    _fileSystemModel->setRootPath(_imagePath);
 
     _directoryView->setRootIndex(_fileSystemModel->setRootPath(_imagePath));
   }
@@ -411,6 +416,8 @@ void MainWindow::selectInDirectory(const QModelIndex &index)
     {
       _directoryDock->setWindowTitle(tr("Images: %1").arg(filename));
 
+      _fileSystemModel->setRootPath(filename);
+
       _directoryView->setRootIndex(_fileSystemModel->setRootPath(filename));
     }
   }
@@ -446,6 +453,60 @@ void MainWindow::imageUpdated()
 {
   // Image description is updated, refetch the exif info
   _exiv2Fetcher.fetch(_imageFilename);
+}
+
+void MainWindow::selectPrevImage()
+{
+ QModelIndexList selectedIndexes =  _directoryView->selectionModel()->selectedIndexes();
+
+ if (selectedIndexes.size() >= 1)
+ {
+   QModelIndex selected = selectedIndexes.first();
+
+   QModelIndex sibling  = selected.sibling(selected.row() - 1, selected.column());
+
+   if (sibling != QModelIndex())
+   {
+     _directoryView->selectionModel()->select(selected, QItemSelectionModel::Deselect);
+     _directoryView->selectionModel()->select(sibling, QItemSelectionModel::Select);
+
+     if (!_fileSystemModel->isDir(sibling))
+     {
+       selectInDirectory(sibling);
+     }
+   }
+ }
+ else
+ {
+   QMessageBox::warning(0, tr("Warning"), tr("No selected image"));
+ }
+}
+
+void MainWindow::selectNextImage()
+{
+ QModelIndexList selectedIndexes =  _directoryView->selectionModel()->selectedIndexes();
+
+ if (selectedIndexes.size() >= 1)
+ {
+   QModelIndex selected = selectedIndexes.first();
+
+   QModelIndex sibling  = selected.sibling(selected.row() + 1, selected.column());
+
+   if (sibling != QModelIndex())
+   {
+     _directoryView->selectionModel()->select(selected, QItemSelectionModel::Deselect);
+     _directoryView->selectionModel()->select(sibling, QItemSelectionModel::Select);
+
+     if (!_fileSystemModel->isDir(sibling))
+     {
+       selectInDirectory(sibling);
+     }
+   }
+ }
+ else
+ {
+   QMessageBox::warning(0, tr("Warning"), tr("No selected image"));
+ }
 }
 
 void MainWindow::about()

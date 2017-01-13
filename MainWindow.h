@@ -48,6 +48,8 @@ private slots:
   void imageUpdated();
   void exifFetched();
   void directoryLoaded(const QString &);
+  void selectPrevImage();
+  void selectNextImage();
 
 private:
   void createActions();
