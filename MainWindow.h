@@ -35,6 +35,7 @@ protected:
 
 private slots:
   void openDirectory();
+  void parentDirectory();
   void about();
 
   void zoomIn();
@@ -75,8 +76,10 @@ private:
   QMenu       *_imageMenu;
   QMenu       *_windowMenu;
   QMenu       *_helpMenu;
+  QToolBar    *_toolBar;
 
   QAction     *_openDirectoryAction;
+  QAction     *_parentDirectoryAction;
   QAction     *_quitAction;
   QAction     *_aboutAction;
   QAction     *_aboutQtAction;
@@ -88,6 +91,9 @@ private:
   QAction     *_fitToWindowAction;
   QAction     *_showMapAction;
 
+  QAction     *_prevImageAction;
+  QAction     *_nextImageAction;
+
   // Properties dock
   QTableView  *_exifView;
 
@@ -97,10 +103,8 @@ private:
   QFileSystemModel *_fileSystemModel;
 
   // Description dock
-  QPushButton *_prevButton;
   QLineEdit   *_imageDescription;
   QPushButton *_setButton;
-  QPushButton *_nextButton;
 
   // Image
   QLabel      *_imageLabel;

@@ -64,9 +64,17 @@ MainWindow::~MainWindow()
 // == GUI =====================================================================
 void MainWindow::createActions()
 {
-  _openDirectoryAction = new QAction(tr("&Open Directory..."), this);
+  QCommonStyle *style = new QCommonStyle;
+
+  QIcon openDirectoryIcon = style->standardIcon(QStyle::SP_DirOpenIcon);
+  _openDirectoryAction = new QAction(openDirectoryIcon, tr("&Open Directory..."), this);
   _openDirectoryAction->setStatusTip(tr("Open a directory with image files"));
   connect(_openDirectoryAction, SIGNAL(triggered()), this, SLOT(openDirectory()));
+
+  QIcon parentDirectoryIcon = style->standardIcon(QStyle::SP_FileDialogToParent);
+  _parentDirectoryAction = new QAction(parentDirectoryIcon, tr("&Goto Parent Directory"), this);
+  _parentDirectoryAction->setStatusTip(tr("Goto the parent directory"));
+  connect(_parentDirectoryAction, SIGNAL(triggered()), this, SLOT(parentDirectory()));
 
   _quitAction = new QAction(tr("&Quit"), this);
   _quitAction->setShortcuts(QKeySequence::Quit);
@@ -99,10 +107,19 @@ void MainWindow::createActions()
   _fitToWindowAction->setEnabled(false);
   connect(_fitToWindowAction, SIGNAL(triggered()), this, SLOT(fitToWindow()));
 
-  _showMapAction = new QAction(tr("Show location on &Map"), this);
+  QIcon showMapIcon = QIcon(":/icons/marker.png");
+  _showMapAction = new QAction(showMapIcon, tr("Show location on &Map"), this);
   _showMapAction->setShortcut(tr("Ctrl+M"));
   _showMapAction->setEnabled(false);
   connect(_showMapAction, SIGNAL(triggered()), this, SLOT(showMap()));
+
+  QIcon prevImageIcon = style->standardIcon(QStyle::SP_ArrowBack);
+  _prevImageAction = new QAction(prevImageIcon, tr("Show prevous image"), this);
+  connect(_prevImageAction, SIGNAL(triggered()), this, SLOT(selectPrevImage()));
+
+  QIcon nextImageIcon = style->standardIcon(QStyle::SP_ArrowForward);
+  _nextImageAction = new QAction(nextImageIcon, tr("Show next image"), this);
+  connect(_nextImageAction, SIGNAL(triggered()), this, SLOT(selectNextImage()));
 
   _aboutAction = new QAction(tr("&About"), this);
   _aboutAction->setStatusTip(tr("Show the application's About box"));
@@ -139,10 +156,20 @@ void MainWindow::createMenus()
 
 void MainWindow::createToolBars()
 {
+  _toolBar = addToolBar("");
+  _toolBar->setObjectName("ToolBar");
+  _toolBar->addAction(_openDirectoryAction);
+  _toolBar->addAction(_parentDirectoryAction);
+  _toolBar->addSeparator();
+  _toolBar->addAction(_prevImageAction);
+  _toolBar->addAction(_nextImageAction);
+  _toolBar->addSeparator();
+  _toolBar->addAction(_showMapAction);
 }
 
 void MainWindow::createStatusBar()
 {
+  statusBar()->showMessage(tr("Ready"));
 }
 
 void MainWindow::createDockWindows()
@@ -169,7 +196,7 @@ void MainWindow::createDockWindows()
 
      _fileSystemModel = new QFileSystemModel(this);
      //_fileSystemModel->setFilter(QDir::AllDirs | QDir::Files | QDir::NoDot);
-     _fileSystemModel->setFilter(QDir::Files); // | QDir::NoDotAndDotDot);
+     _fileSystemModel->setFilter(QDir::Files | QDir::AllDirs | QDir::NoDotAndDotDot);
 
      QStringList fileSystemFilters; fileSystemFilters << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG";
 
@@ -193,12 +220,6 @@ void MainWindow::createDockWindows()
 
     QHBoxLayout *layout = new QHBoxLayout;
 
-    _prevButton = new QPushButton("<<");
-    connect(_prevButton, SIGNAL(clicked()), this, SLOT(selectPrevImage()));
-    layout->addWidget(_prevButton);
-
-    layout->addSpacing(20);
-
     QLabel *label = new QLabel(tr("Image Description:"));
     layout->addWidget(label);
 
@@ -208,12 +229,6 @@ void MainWindow::createDockWindows()
     _setButton = new QPushButton(tr("Set"));
     connect(_setButton, SIGNAL(clicked()), this, SLOT(updateDescription()));
     layout->addWidget(_setButton);
-
-    layout->addSpacing(20);
-
-    _nextButton = new QPushButton(">>");
-    connect(_nextButton, SIGNAL(clicked()), this, SLOT(selectNextImage()));
-    layout->addWidget(_nextButton);
 
     QWidget *widget = new QWidget;
     widget->setLayout(layout);
@@ -335,6 +350,28 @@ void MainWindow::openDirectory()
   directoryDialog.close();
 }
 
+void MainWindow::parentDirectory()
+{
+  QDir directory = _fileSystemModel->rootDirectory();
+
+  if (directory.isRoot())
+  {
+    //
+  }
+  else
+  {
+    directory.cdUp();
+
+    _imagePath = directory.absolutePath();
+
+    _directoryDock->setWindowTitle(tr("Images: %1").arg(_imagePath));
+
+    _fileSystemModel->setRootPath(_imagePath);
+
+    _directoryView->setRootIndex(_fileSystemModel->setRootPath(_imagePath));
+  }
+}
+
 void MainWindow::zoomIn()
 {
   scaleImage(1.25);
@@ -442,10 +479,11 @@ void MainWindow::exifFetched()
   if (_exiv2Fetcher.exivModel().length() > 0)
   {
     _imageDescription->setText(_exiv2Fetcher.exivModel().getImageDescription());
+    statusBar()->showMessage(tr("Exif metadata fetched"));
   }
   else
   {
-    QMessageBox::warning(0, tr("Exif metadata"), tr("No exif metadata present in this image"));
+    statusBar()->showMessage(tr("No exif metadata present in this image"));
   }
 }
 
