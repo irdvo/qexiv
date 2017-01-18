@@ -208,7 +208,7 @@ void MainWindow::createDockWindows()
      _directoryView = new QListView(_directoryDock);
     _directoryView->setModel(_fileSystemModel);
     _directoryView->setRootIndex(_fileSystemModel->index(_imagePath));
-    connect(_directoryView, SIGNAL(activated(const QModelIndex&)), this, SLOT(selectInDirectory(const QModelIndex&)));
+    connect(_directoryView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(selectInDirectory(const QModelIndex&)));
 
     _directoryDock->setWidget(_directoryView);
     addDockWidget(Qt::LeftDockWidgetArea, _directoryDock);;
@@ -326,6 +326,16 @@ void MainWindow::adjustScrollBar(QScrollBar *scrollBar, double factor)
   scrollBar->setValue(int(factor * scrollBar->value() + ((factor - 1) * scrollBar->pageStep()/2)));
 }
 
+void MainWindow::deselectDirectorySelections()
+{
+  QModelIndexList indexes =  _directoryView->selectionModel()->selectedIndexes();
+
+  for (QModelIndexList::iterator index = indexes.begin(); index != indexes.end(); ++index)
+  {
+    _directoryView->selectionModel()->select(*index, QItemSelectionModel::Deselect);
+  }
+}
+
 // == Slots ===================================================================
 
 void MainWindow::openDirectory()
@@ -338,9 +348,11 @@ void MainWindow::openDirectory()
 
   if (directoryDialog.exec() == QDialog::Accepted)
   {
+    deselectDirectorySelections();
+
     _imagePath = directoryDialog.selectedFiles().first();
 
-    _directoryDock->setWindowTitle(tr("Images: %1").arg(_imagePath));
+    _directoryDock->setWindowTitle(_imagePath);
 
     _fileSystemModel->setRootPath(_imagePath);
 
@@ -354,13 +366,11 @@ void MainWindow::parentDirectory()
 {
   QDir directory = _fileSystemModel->rootDirectory();
 
-  if (directory.isRoot())
-  {
-    //
-  }
-  else
+  if (!directory.isRoot())
   {
     directory.cdUp();
+
+    deselectDirectorySelections();
 
     _imagePath = directory.absolutePath();
 
@@ -440,31 +450,35 @@ void MainWindow::showMap()
 
 void MainWindow::directoryLoaded(const QString &)
 {
-  // Directory with image files is loaded
+  selectFirstImage();
 }
 
 void MainWindow::selectInDirectory(const QModelIndex &index)
 {
-  QString filename = _fileSystemModel->fileInfo(index).absoluteFilePath();
-
-  if (_fileSystemModel->fileInfo(index).isDir())
+  if (index != QModelIndex())
   {
-    if (filename != "/..")
+    deselectDirectorySelections();
+
+    QString filename = _fileSystemModel->fileInfo(index).absoluteFilePath();
+
+    if (_fileSystemModel->fileInfo(index).isDir())
     {
-      _directoryDock->setWindowTitle(tr("Images: %1").arg(filename));
+      _directoryDock->setWindowTitle(filename);
 
       _fileSystemModel->setRootPath(filename);
 
       _directoryView->setRootIndex(_fileSystemModel->setRootPath(filename));
     }
-  }
-  else
-  {
-    openImage(filename);
-  }
+    else
+    {
+      // QMessageBox::warning(0, tr("selectFirstImage"), tr("Selection %1").arg(_fileSystemModel->fileInfo(index).absoluteFilePath()));
 
-  //QMessageBox::information(0, "Info", QString("row:%1").arg(_directoryView->selectionModel()->currentIndex().row()));
-  //QMessageBox::information(0, "Info", QString("size:%1").arg(_directoryView->model()->rowCount(_directoryView->selectionModel()->currentIndex().parent())));
+      _directoryView->selectionModel()->select(index, QItemSelectionModel::Select);
+      _directoryView->scrollTo(index);
+
+      openImage(filename);
+    }
+  }
 }
 
 void MainWindow::updateDescription()
@@ -493,58 +507,82 @@ void MainWindow::imageUpdated()
   _exiv2Fetcher.fetch(_imageFilename);
 }
 
+void MainWindow::selectFirstImage()
+{
+  // Strange qt bug: directoryLoaded event is too early -> indices are not yet correct
+  QTime waitTime = QTime::currentTime().addMSecs( 200 );
+  while (QTime::currentTime() < waitTime)
+  {
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+  }
+
+  int col = _directoryView->modelColumn();
+  int row = 0;
+
+  QModelIndex root = _directoryView->rootIndex();
+
+  QModelIndex sibling = root.child(row, col);
+
+  while ((sibling != QModelIndex()) && (_fileSystemModel->isDir(sibling)))
+  {
+    sibling = sibling.sibling(++row, col);
+  }
+
+  selectInDirectory(sibling);
+}
+
 void MainWindow::selectPrevImage()
 {
- QModelIndexList selectedIndexes =  _directoryView->selectionModel()->selectedIndexes();
+  QModelIndexList selectedIndexes =  _directoryView->selectionModel()->selectedIndexes();
 
- if (selectedIndexes.size() >= 1)
- {
-   QModelIndex selected = selectedIndexes.first();
+  if (selectedIndexes.size() >= 1)
+  {
+    QModelIndex selected = selectedIndexes.first();
 
-   QModelIndex sibling  = selected.sibling(selected.row() - 1, selected.column());
+    int row = selected.row();
+    int col = selected.column();
 
-   if (sibling != QModelIndex())
-   {
-     _directoryView->selectionModel()->select(selected, QItemSelectionModel::Deselect);
-     _directoryView->selectionModel()->select(sibling, QItemSelectionModel::Select);
+    QModelIndex sibling;
 
-     if (!_fileSystemModel->isDir(sibling))
-     {
-       selectInDirectory(sibling);
-     }
-   }
- }
- else
- {
-   QMessageBox::warning(0, tr("Warning"), tr("No selected image"));
- }
+    do
+    {
+       sibling = selected.sibling(--row, col);
+    }
+    while ((sibling != QModelIndex()) && (_fileSystemModel->isDir(sibling)));
+
+    selectInDirectory(sibling);
+  }
+  else
+  {
+    QMessageBox::warning(0, tr("Warning"), tr("No selected image"));
+  }
 }
 
 void MainWindow::selectNextImage()
 {
- QModelIndexList selectedIndexes =  _directoryView->selectionModel()->selectedIndexes();
+  QModelIndexList selectedIndexes =  _directoryView->selectionModel()->selectedIndexes();
 
- if (selectedIndexes.size() >= 1)
- {
-   QModelIndex selected = selectedIndexes.first();
+  if (selectedIndexes.size() >= 1)
+  {
+    QModelIndex selected = selectedIndexes.first();
 
-   QModelIndex sibling  = selected.sibling(selected.row() + 1, selected.column());
+    int row = selected.row();
+    int col = selected.column();
 
-   if (sibling != QModelIndex())
-   {
-     _directoryView->selectionModel()->select(selected, QItemSelectionModel::Deselect);
-     _directoryView->selectionModel()->select(sibling, QItemSelectionModel::Select);
+    QModelIndex sibling;
 
-     if (!_fileSystemModel->isDir(sibling))
-     {
-       selectInDirectory(sibling);
-     }
-   }
- }
- else
- {
-   QMessageBox::warning(0, tr("Warning"), tr("No selected image"));
- }
+    do
+    {
+      sibling = selected.sibling(++row, col);
+    }
+    while ((sibling != QModelIndex()) && (_fileSystemModel->isDir(sibling)));
+
+    selectInDirectory(sibling);
+  }
+  else
+  {
+    QMessageBox::warning(0, tr("Warning"), tr("No selected image"));
+  }
 }
 
 void MainWindow::about()
@@ -559,9 +597,9 @@ void MainWindow::about()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    saveSettings();
+  saveSettings();
 
-    QMainWindow::closeEvent(event);
+  QMainWindow::closeEvent(event);
 }
 
 // == Settings ================================================================

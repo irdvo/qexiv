@@ -137,10 +137,6 @@ void Exiv2Fetcher::readTillEOL(const QByteArray &buffer, int &i, QString &result
 
 void Exiv2Fetcher::done(int, ExitStatus)
 {
-  if (_exivModel.length() == 0)
-  {
-  }
-
   _exivModel.done();
 
   emit fetched();

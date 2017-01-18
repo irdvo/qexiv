@@ -49,6 +49,7 @@ private slots:
   void imageUpdated();
   void exifFetched();
   void directoryLoaded(const QString &);
+  void selectFirstImage();
   void selectPrevImage();
   void selectNextImage();
 
@@ -71,6 +72,8 @@ private:
 
   void restoreSettings();
   void saveSettings();
+
+  void deselectDirectorySelections();
 
   QMenu       *_fileMenu;
   QMenu       *_imageMenu;
