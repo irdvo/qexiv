@@ -87,10 +87,13 @@ void ExivModel::done()
 
 // -- Get the GPS location ----------------------------------------------------
 
-bool ExivModel::getGPSLocation(double *latitude, double *longitude)
+bool ExivModel::getGPSLocation(double &latitude, double &longitude)
 {
   bool hasLatitude  = false;
   bool hasLongitude = false;
+
+  QString refLatitude  = "";
+  QString refLongitude = "";
 
   for (ExivItems::iterator item = _exivItems.begin(); item != _exivItems.end(); ++item)
   {
@@ -112,6 +115,40 @@ bool ExivModel::getGPSLocation(double *latitude, double *longitude)
   return (hasLatitude && hasLongitude);
 }
 
+void ExivModel::getGPSRef(double &latitude, double &longitude)
+{
+  bool hasLatitude  = false;
+  bool hasLongitude = false;
+
+  for (ExivItems::iterator item = _exivItems.begin(); item != _exivItems.end(); ++item)
+  {
+    if (item->_key.endsWith("GPSLatitudeRef", Qt::CaseInsensitive))
+    {
+      if ((!item->_value.isEmpty()) && ((item->_value[0] == 'S') || (item->_value[0] == 's')))
+      {
+        latitude = -latitude;
+      }
+
+      hasLatitude = true;
+    }
+
+    if (item->_key.endsWith("GPSLongitudeRef", Qt::CaseInsensitive))
+    {
+      if ((!item->_value.isEmpty()) && ((item->_value[0] == 'W') || (item->_value[0] == 'w')))
+      {
+        longitude = -longitude;
+      }
+
+      hasLongitude = true;
+    }
+
+    if (hasLatitude && hasLongitude)
+    {
+      break;
+    }
+  }
+}
+
 QString ExivModel::getImageDescription()
 {
   for (ExivItems::iterator item = _exivItems.begin(); item != _exivItems.end(); ++item)
@@ -125,7 +162,7 @@ QString ExivModel::getImageDescription()
   return "";
 }
 
-bool ExivModel::scanGPSLocation(double *location, const QString &value)
+bool ExivModel::scanGPSLocation(double &location, const QString &value)
 {
   QString degrees;
   QString minutes;
@@ -157,10 +194,7 @@ bool ExivModel::scanGPSLocation(double *location, const QString &value)
     seconds.append(value.at(i++));
   }
 
-  if (location != 0)
-  {
-    *location = degrees.toDouble() + minutes.toDouble() / 60.0 + seconds.toDouble() / 3600.0;
-  }
+  location = degrees.toDouble() + minutes.toDouble() / 60.0 + seconds.toDouble() / 3600.0;
 
   return (!degrees.isEmpty()) && (!minutes.isEmpty()) && (!seconds.isEmpty());
 }

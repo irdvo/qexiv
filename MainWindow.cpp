@@ -429,8 +429,10 @@ void MainWindow::showMap()
   double latitude;
   double longitude;
 
-  if (_exiv2Fetcher.exivModel().getGPSLocation(&latitude, &longitude))
+  if (_exiv2Fetcher.exivModel().getGPSLocation(latitude, longitude))
   {
+    _exiv2Fetcher.exivModel().getGPSRef(latitude, longitude);
+
     QString url = QString("http://www.openstreetmap.org/?mlat=%1&mlon=%2#map=16/%3/%4")
         .arg(latitude,  0, 'f', 7)
         .arg(longitude, 0, 'f', 7)

@@ -27,14 +27,16 @@ public:
   // -- Getters ---------------------------------------------------------------
   int length() const { return _exivItems.size(); }
 
-  bool getGPSLocation(double *latitude = 0, double *longitude = 0);
+  bool getGPSLocation(double &latitude, double &longitude);
+
+  void getGPSRef(double &latitude, double &longitude);
 
   QString getImageDescription();
 
 private:
 
   static
-  bool scanGPSLocation(double *location, const QString &value);
+  bool scanGPSLocation(double &location, const QString &value);
 
   struct ExivItem
   {
