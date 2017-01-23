@@ -11,30 +11,15 @@
 MainWindow::MainWindow(int argc, char *argv[]) :
   _imageFilename(""),
   _imagePath(QDir::currentPath()),
+  _scaleFactor(1.0),
   _exiv2Fetcher(this),
   _exiv2Updater(this)
 {
   QCoreApplication::setOrganizationName("qexiv");
   QCoreApplication::setApplicationName("qexiv");
 
-  _imageLabel = new QLabel;
-    _imageLabel->setBackgroundRole(QPalette::Base);
-    _imageLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-    _imageLabel->setScaledContents(true);
-    _imageLabel->setAlignment(Qt::AlignCenter);
-
-  _imageScrollArea = new QScrollArea;
-    _imageScrollArea->setBackgroundRole(QPalette::Base);
-    _imageScrollArea->setWidget(_imageLabel);
-    _imageScrollArea->setVisible(true);
-    _imageScrollArea->setAlignment(Qt::AlignCenter);
-
-  _scaleFactor = 1.0;
-
   connect(&_exiv2Fetcher, SIGNAL(fetched()), this, SLOT(exifFetched()));
   connect(&_exiv2Updater, SIGNAL(updated()), this, SLOT(imageUpdated()));
-
-  setCentralWidget(_imageScrollArea);
 
   if (argc > 1)
   {
@@ -44,11 +29,13 @@ MainWindow::MainWindow(int argc, char *argv[]) :
     }
   }
 
+  createCentralWidget();
   createActions();
   createMenus();
   createToolBars();
   createStatusBar();
-  createDockWindows();
+  createMetadataDock();
+  createDirectoryDock();
 
   restoreSettings();
 
@@ -62,6 +49,43 @@ MainWindow::~MainWindow()
 }
 
 // == GUI =====================================================================
+void MainWindow::createCentralWidget()
+{
+  QVBoxLayout *vbox = new QVBoxLayout;
+
+    _imageLabel = new QLabel;
+      _imageLabel->setBackgroundRole(QPalette::Base);
+      _imageLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+      _imageLabel->setScaledContents(true);
+      _imageLabel->setAlignment(Qt::AlignCenter);
+
+    _imageScrollArea = new QScrollArea;
+      _imageScrollArea->setBackgroundRole(QPalette::Base);
+      _imageScrollArea->setWidget(_imageLabel);
+      _imageScrollArea->setVisible(true);
+      _imageScrollArea->setAlignment(Qt::AlignCenter);
+
+    vbox->addWidget(_imageScrollArea);
+
+      QHBoxLayout *hbox = new QHBoxLayout;
+
+      QLabel *label = new QLabel(tr("Image Description:"));
+      hbox->addWidget(label);
+
+      _imageDescription = new QLineEdit;
+      hbox->addWidget(_imageDescription);
+
+      _setButton = new QPushButton(tr("Set"));
+      connect(_setButton, SIGNAL(clicked()), this, SLOT(updateDescription()));
+      hbox->addWidget(_setButton);
+    vbox->addLayout(hbox);
+
+  QWidget *widget = new QWidget(this);
+  widget->setLayout(vbox);
+
+  setCentralWidget(widget);
+}
+
 void MainWindow::createActions()
 {
   QCommonStyle *style = new QCommonStyle;
@@ -172,7 +196,7 @@ void MainWindow::createStatusBar()
   statusBar()->showMessage(tr("Ready"));
 }
 
-void MainWindow::createDockWindows()
+void MainWindow::createMetadataDock()
 {
   QDockWidget *dock = new QDockWidget(tr("Metadata"), this);
     dock->setObjectName("Metadata");
@@ -189,7 +213,10 @@ void MainWindow::createDockWindows()
     dock->setWidget(_exifView);
     addDockWidget(Qt::RightDockWidgetArea, dock);
   _windowMenu->addAction(dock->toggleViewAction());
+}
 
+void MainWindow::createDirectoryDock()
+{
   _directoryDock = new QDockWidget(tr("Images: %1").arg(QDir::currentPath()), this);
     _directoryDock->setObjectName("Images");
     _directoryDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
@@ -213,28 +240,6 @@ void MainWindow::createDockWindows()
     _directoryDock->setWidget(_directoryView);
     addDockWidget(Qt::LeftDockWidgetArea, _directoryDock);;
   _windowMenu->addAction(_directoryDock->toggleViewAction());
-
-  dock = new QDockWidget(tr("Description"), this);
-    dock->setObjectName("Description");
-    dock->setAllowedAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-
-    QHBoxLayout *layout = new QHBoxLayout;
-
-    QLabel *label = new QLabel(tr("Image Description:"));
-    layout->addWidget(label);
-
-    _imageDescription = new QLineEdit;
-    layout->addWidget(_imageDescription);
-
-    _setButton = new QPushButton(tr("Set"));
-    connect(_setButton, SIGNAL(clicked()), this, SLOT(updateDescription()));
-    layout->addWidget(_setButton);
-
-    QWidget *widget = new QWidget;
-    widget->setLayout(layout);
-    dock->setWidget(widget);
-    addDockWidget(Qt::BottomDockWidgetArea, dock);
-  _windowMenu->addAction(dock->toggleViewAction());
 }
 
 void MainWindow::updateActions()
@@ -326,6 +331,8 @@ void MainWindow::adjustScrollBar(QScrollBar *scrollBar, double factor)
   scrollBar->setValue(int(factor * scrollBar->value() + ((factor - 1) * scrollBar->pageStep()/2)));
 }
 
+
+// == Slots ===================================================================
 void MainWindow::deselectDirectorySelections()
 {
   QModelIndexList indexes =  _directoryView->selectionModel()->selectedIndexes();
@@ -335,8 +342,6 @@ void MainWindow::deselectDirectorySelections()
     _directoryView->selectionModel()->select(*index, QItemSelectionModel::Deselect);
   }
 }
-
-// == Slots ===================================================================
 
 void MainWindow::openDirectory()
 {
@@ -512,7 +517,7 @@ void MainWindow::imageUpdated()
 void MainWindow::selectFirstImage()
 {
   // Strange qt bug: directoryLoaded event is too early -> indices are not yet correct
-  QTime waitTime = QTime::currentTime().addMSecs( 200 );
+  QTime waitTime = QTime::currentTime().addMSecs( 500 );
   while (QTime::currentTime() < waitTime)
   {
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
@@ -605,7 +610,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 
 // == Settings ================================================================
-
 void MainWindow::saveSettings()
 {
   QSettings settings;
@@ -622,4 +626,4 @@ void MainWindow::restoreSettings()
   restoreState   (settings.value("MainWindow/State"   ).toByteArray());
 }
 
-// ----------------------------------------------------------------------------
+// ============================================================================

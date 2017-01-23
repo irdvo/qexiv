@@ -54,11 +54,13 @@ private slots:
   void selectNextImage();
 
 private:
+  void createCentralWidget();
   void createActions();
   void createMenus();
   void createToolBars();
   void createStatusBar();
-  void createDockWindows();
+  void createMetadataDock();
+  void createDirectoryDock();
 
   void setTitle();
   void updateActions();
