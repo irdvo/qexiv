@@ -110,6 +110,7 @@ private:
   // Description dock
   QLineEdit   *_imageDescription;
   QPushButton *_setButton;
+  QPushButton *_nextButton;
 
   // Image
   QLabel      *_imageLabel;

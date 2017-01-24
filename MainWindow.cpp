@@ -73,11 +73,17 @@ void MainWindow::createCentralWidget()
       hbox->addWidget(label);
 
       _imageDescription = new QLineEdit;
+      connect(_imageDescription, SIGNAL(returnPressed()), this, SLOT(updateDescription()));
       hbox->addWidget(_imageDescription);
 
       _setButton = new QPushButton(tr("Set"));
       connect(_setButton, SIGNAL(clicked()), this, SLOT(updateDescription()));
       hbox->addWidget(_setButton);
+
+      _nextButton = new QPushButton(tr(">>"));
+      connect(_nextButton, SIGNAL(clicked()), this, SLOT(selectNextImage()));
+      hbox->addWidget(_nextButton);
+
     vbox->addLayout(hbox);
 
   QWidget *widget = new QWidget(this);
