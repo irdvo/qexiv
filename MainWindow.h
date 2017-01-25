@@ -37,7 +37,7 @@ private slots:
   void openDirectory();
   void parentDirectory();
   void about();
-
+  void geoLocate();
   void zoomIn();
   void zoomOut();
   void setNormalSize();
@@ -98,6 +98,8 @@ private:
 
   QAction     *_prevImageAction;
   QAction     *_nextImageAction;
+
+  QAction     *_geoLocateAction;
 
   // Properties dock
   QTableView  *_exifView;

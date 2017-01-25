@@ -6,6 +6,7 @@
 #endif
 
 #include "MainWindow.h"
+#include "GeoLocationDialog.h"
 
 
 MainWindow::MainWindow(int argc, char *argv[]) :
@@ -151,6 +152,9 @@ void MainWindow::createActions()
   _nextImageAction = new QAction(nextImageIcon, tr("Show next image"), this);
   connect(_nextImageAction, SIGNAL(triggered()), this, SLOT(selectNextImage()));
 
+  _geoLocateAction = new QAction(tr("GeoLocation..."), this);
+  connect(_geoLocateAction, SIGNAL(triggered()), this, SLOT(geoLocate()));
+
   _aboutAction = new QAction(tr("&About"), this);
   _aboutAction->setStatusTip(tr("Show the application's About box"));
   connect(_aboutAction, SIGNAL(triggered()), this, SLOT(about()));
@@ -164,6 +168,8 @@ void MainWindow::createMenus()
 {
   _fileMenu = menuBar()->addMenu(tr("&File"));
   _fileMenu->addAction(_openDirectoryAction);
+  _fileMenu->addSeparator();
+  _fileMenu->addAction(_geoLocateAction);
   _fileMenu->addSeparator();
   _fileMenu->addAction(_quitAction);
 
@@ -391,6 +397,18 @@ void MainWindow::parentDirectory()
 
     _directoryView->setRootIndex(_fileSystemModel->setRootPath(_imagePath));
   }
+}
+
+void MainWindow::geoLocate()
+{
+  GeoLocationDialog *dialog = new GeoLocationDialog(this);
+
+  if (dialog->exec() == QDialog::Accepted)
+  {
+
+  }
+
+  delete dialog;
 }
 
 void MainWindow::zoomIn()
