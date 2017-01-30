@@ -8,7 +8,7 @@
 #include "Exiv2Fetcher.h"
 
 
-Exiv2Fetcher::Exiv2Fetcher(QObject *parent) :
+Exiv2ModelFetcher::Exiv2ModelFetcher(QObject *parent) :
   QProcess(parent),
   _exivModel()
 {
@@ -18,13 +18,13 @@ Exiv2Fetcher::Exiv2Fetcher(QObject *parent) :
   connect(this, SIGNAL(readyReadStandardOutput()),           this, SLOT(reportData()));
 }
 
-Exiv2Fetcher::~Exiv2Fetcher()
+Exiv2ModelFetcher::~Exiv2ModelFetcher()
 {
 
 }
 
 // -- Fetch the exif metadata for the image -----------------------------------
-bool Exiv2Fetcher::fetch(const QString &imageFilename)
+bool Exiv2ModelFetcher::fetch(const QString &imageFilename)
 {
   bool ok = false;
 
@@ -43,14 +43,14 @@ bool Exiv2Fetcher::fetch(const QString &imageFilename)
 }
 
 // -- Slots -------------------------------------------------------------------
-void Exiv2Fetcher::reportError()
+void Exiv2ModelFetcher::reportError()
 {
   QByteArray buffer = readAllStandardError();
 
   QMessageBox::critical(0, "exiv2 error", buffer);
 }
 
-void Exiv2Fetcher::reportData()
+void Exiv2ModelFetcher::reportData()
 {
   QString key;
   QString type;
@@ -86,12 +86,12 @@ void Exiv2Fetcher::reportData()
 }
 
 
-bool Exiv2Fetcher::isSpace(char ch)
+bool Exiv2ModelFetcher::isSpace(char ch)
 {
   return (ch == ' ') || (ch == '\t') || (ch == '\v') || (ch == '\0');
 }
 
-void Exiv2Fetcher::skipSpaces(const QByteArray &buffer, int &i)
+void Exiv2ModelFetcher::skipSpaces(const QByteArray &buffer, int &i)
 {
   while ((i < buffer.length()) && (isSpace(buffer.at(i))))
   {
@@ -99,7 +99,7 @@ void Exiv2Fetcher::skipSpaces(const QByteArray &buffer, int &i)
   }
 }
 
-void Exiv2Fetcher::readTillSpace(const QByteArray &buffer, int &i, QString &result)
+void Exiv2ModelFetcher::readTillSpace(const QByteArray &buffer, int &i, QString &result)
 {
   result.clear();
 
@@ -111,7 +111,7 @@ void Exiv2Fetcher::readTillSpace(const QByteArray &buffer, int &i, QString &resu
   }
 }
 
-void Exiv2Fetcher::readTillEOL(const QByteArray &buffer, int &i, QString &result)
+void Exiv2ModelFetcher::readTillEOL(const QByteArray &buffer, int &i, QString &result)
 {
   result.clear();
 
@@ -135,7 +135,7 @@ void Exiv2Fetcher::readTillEOL(const QByteArray &buffer, int &i, QString &result
   result.trimmed();
 }
 
-void Exiv2Fetcher::done(int, ExitStatus)
+void Exiv2ModelFetcher::done(int, ExitStatus)
 {
   _exivModel.done();
 

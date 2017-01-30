@@ -1,17 +1,17 @@
-#ifndef _EXIV2FETCHER_H
-#define _EXIV2FETCHER_H
+#ifndef _EXIV2MODELFETCHER_H
+#define _EXIV2MODELFETCHER_H
 
 #include <QProcess>
 
 #include "ExivModel.h"
 
-class Exiv2Fetcher : public QProcess
+class Exiv2ModelFetcher : public QProcess
 {
   Q_OBJECT
 
 public:
-  Exiv2Fetcher(QObject *parent = 0);
-  ~Exiv2Fetcher();
+  Exiv2ModelFetcher(QObject *parent = 0);
+  ~Exiv2ModelFetcher();
 
   // -- Model -----------------------------------------------------------------
   ExivModel &exivModel() { return _exivModel; }

@@ -13,14 +13,14 @@ MainWindow::MainWindow(int argc, char *argv[]) :
   _imageFilename(""),
   _imagePath(QDir::currentPath()),
   _scaleFactor(1.0),
-  _exiv2Fetcher(this),
+  _exiv2ModelFetcher(this),
   _exiv2Updater(this)
 {
   QCoreApplication::setOrganizationName("qexiv");
   QCoreApplication::setApplicationName("qexiv");
 
-  connect(&_exiv2Fetcher, SIGNAL(fetched()), this, SLOT(exifFetched()));
-  connect(&_exiv2Updater, SIGNAL(updated()), this, SLOT(imageUpdated()));
+  connect(&_exiv2ModelFetcher, SIGNAL(fetched()), this, SLOT(exifFetched()));
+  connect(&_exiv2Updater,      SIGNAL(updated()), this, SLOT(imageUpdated()));
 
   if (argc > 1)
   {
@@ -220,7 +220,7 @@ void MainWindow::createMetadataDock()
 #else
     _exifView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
 #endif
-    _exifView->setModel(&_exiv2Fetcher.exivModel());
+    _exifView->setModel(&_exiv2ModelFetcher.exivModel());
 
     dock->setWidget(_exifView);
     addDockWidget(Qt::RightDockWidgetArea, dock);
@@ -299,7 +299,7 @@ void MainWindow::openImage(const QString &filename)
 
     setTitle();
 
-    _exiv2Fetcher.fetch(_imageFilename);
+    _exiv2ModelFetcher.fetch(_imageFilename);
 
     setImage(image);
   }
@@ -458,9 +458,9 @@ void MainWindow::showMap()
   double latitude;
   double longitude;
 
-  if (_exiv2Fetcher.exivModel().getGPSLocation(latitude, longitude))
+  if (_exiv2ModelFetcher.exivModel().getGPSLocation(latitude, longitude))
   {
-    _exiv2Fetcher.exivModel().getGPSRef(latitude, longitude);
+    _exiv2ModelFetcher.exivModel().getGPSRef(latitude, longitude);
 
     QString url = QString("http://www.openstreetmap.org/?mlat=%1&mlon=%2#map=16/%3/%4")
         .arg(latitude,  0, 'f', 7)
@@ -521,9 +521,9 @@ void MainWindow::updateDescription()
 void MainWindow::exifFetched()
 {
   // Exif data of image is fetched
-  if (_exiv2Fetcher.exivModel().length() > 0)
+  if (_exiv2ModelFetcher.exivModel().length() > 0)
   {
-    _imageDescription->setText(_exiv2Fetcher.exivModel().getImageDescription());
+    _imageDescription->setText(_exiv2ModelFetcher.exivModel().getImageDescription());
     statusBar()->showMessage(tr("Exif metadata fetched"));
   }
   else
@@ -535,7 +535,7 @@ void MainWindow::exifFetched()
 void MainWindow::imageUpdated()
 {
   // Image description is updated, refetch the exif info
-  _exiv2Fetcher.fetch(_imageFilename);
+  _exiv2ModelFetcher.fetch(_imageFilename);
 }
 
 void MainWindow::selectFirstImage()

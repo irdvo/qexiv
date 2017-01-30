@@ -123,8 +123,8 @@ private:
   double       _scaleFactor;
 
   // Exiv2
-  Exiv2Fetcher _exiv2Fetcher;
-  Exiv2Updater _exiv2Updater;
+  Exiv2ModelFetcher _exiv2ModelFetcher;
+  Exiv2Updater      _exiv2Updater;
 };
 
 #endif
