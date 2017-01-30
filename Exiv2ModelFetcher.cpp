@@ -5,7 +5,7 @@
 #include <QtGui>
 #endif
 
-#include "Exiv2Fetcher.h"
+#include "Exiv2ModelFetcher.h"
 
 
 Exiv2ModelFetcher::Exiv2ModelFetcher(QObject *parent) :
