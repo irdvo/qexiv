@@ -68,24 +68,44 @@ void MainWindow::createCentralWidget()
 
     vbox->addWidget(_imageScrollArea);
 
-      QHBoxLayout *hbox = new QHBoxLayout;
+      QGridLayout *grid = new QGridLayout;
 
-      QLabel *label = new QLabel(tr("Image Description:"));
-      hbox->addWidget(label);
+      grid->addWidget(new QLabel(tr("Image Description:")), 0, 0);
 
       _imageDescription = new QLineEdit;
       connect(_imageDescription, SIGNAL(returnPressed()), this, SLOT(updateDescription()));
-      hbox->addWidget(_imageDescription);
+      grid->addWidget(_imageDescription, 0, 1);
 
       _setButton = new QPushButton(tr("Set"));
       connect(_setButton, SIGNAL(clicked()), this, SLOT(updateDescription()));
-      hbox->addWidget(_setButton);
+      grid->addWidget(_setButton, 0, 2);
 
       _nextButton = new QPushButton(tr(">>"));
       connect(_nextButton, SIGNAL(clicked()), this, SLOT(selectNextImage()));
-      hbox->addWidget(_nextButton);
+      grid->addWidget(_nextButton, 0, 3);
 
-    vbox->addLayout(hbox);
+      grid->addWidget(new QLabel(tr("Latitude:")), 1, 0);
+
+      _latitudeEdit = new QLineEdit;
+      connect(_latitudeEdit, SIGNAL(returnPressed()), this, SLOT(updateLatitude()));
+      grid->addWidget(_latitudeEdit, 1, 1);
+
+      _latitudeButton = new QPushButton(tr("Set"));
+      connect(_latitudeButton, SIGNAL(clicked()), this, SLOT(updateLatitude()));
+      grid->addWidget(_latitudeButton, 1, 2);
+
+      grid->addWidget(new QLabel(tr("Longitude:")), 2, 0);
+
+      _longitudeEdit = new QLineEdit;
+      connect(_longitudeEdit, SIGNAL(returnPressed()), this, SLOT(updateLongitude()));
+      grid->addWidget(_longitudeEdit, 2, 1);
+
+      _longitudeButton = new QPushButton(tr("Set"));
+      connect(_longitudeButton, SIGNAL(clicked()), this, SLOT(updateLongitude()));
+      grid->addWidget(_longitudeButton, 2, 2);
+
+
+    vbox->addLayout(grid);
 
   QWidget *widget = new QWidget(this);
   widget->setLayout(vbox);
@@ -518,12 +538,39 @@ void MainWindow::updateDescription()
   _exiv2Updater.update(_imageFilename,  _imageDescription->text());
 }
 
+void MainWindow::updateLatitude()
+{
+  _exiv2Updater.updateLatitude(_imageFilename, _latitudeEdit->text().toDouble());
+}
+
+void MainWindow::updateLongitude()
+{
+  _exiv2Updater.updateLongitude(_imageFilename, _longitudeEdit->text().toDouble());
+}
+
 void MainWindow::exifFetched()
 {
   // Exif data of image is fetched
   if (_exiv2ModelFetcher.exivModel().length() > 0)
   {
     _imageDescription->setText(_exiv2ModelFetcher.exivModel().getImageDescription());
+
+    double latitude;
+    double longitude;
+
+    if (_exiv2ModelFetcher.exivModel().getGPSLocation(latitude, longitude))
+    {
+      _exiv2ModelFetcher.exivModel().getGPSRef(latitude, longitude);
+
+      _latitudeEdit ->setText(tr("%1").arg(latitude));
+      _longitudeEdit->setText(tr("%1").arg(longitude));
+    }
+    else
+    {
+      _latitudeEdit->setText("");
+      _longitudeEdit->setText("");
+    }
+
     statusBar()->showMessage(tr("Exif metadata fetched"));
   }
   else

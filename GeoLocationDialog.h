@@ -29,8 +29,11 @@ public:
   };
 
   QVector<TrkPt> &trkPts() { return _points; }
+  int             secondsOffset() { return _secondsOffset; }
 
 private:
+  void accept();
+
   void parseXML(QFile &xmlFile, int &tracks, int &segments, QVector<TrkPt> &_points);
   void parseTrk(QXmlStreamReader &xml, int &segments, QVector<TrkPt> &_points);
   void parseTrkSeg(QXmlStreamReader &xml, QVector<TrkPt> &_points);
@@ -38,12 +41,14 @@ private:
 
 private:
   QVector<TrkPt>    _points;
+  int               _secondsOffset;
 
   QLineEdit        *_filenameEdit;
   QPushButton      *_browseButton;
   QLineEdit        *_tracksEdit;
   QLineEdit        *_segmentsEdit;
   QLineEdit        *_pointsEdit;
+  QLineEdit        *_secondsOffsetEdit;
   QDialogButtonBox *_buttonBox;
 };
 

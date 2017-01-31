@@ -9,7 +9,8 @@
 
 
 GeoLocationDialog::GeoLocationDialog(QWidget *parent) :
-  QDialog(parent)
+  QDialog(parent),
+  _secondsOffset(0)
 {
   setWindowTitle(tr("Geolocation"));
 
@@ -44,6 +45,13 @@ GeoLocationDialog::GeoLocationDialog(QWidget *parent) :
       _pointsEdit->setEnabled(false);
       _pointsEdit->setAlignment(Qt::AlignRight);
       grid->addWidget(_pointsEdit, 1, 5);
+
+      grid->addWidget(new QLabel(tr("Time offset (seconds):")), 2, 0);
+      _secondsOffsetEdit = new QLineEdit;
+      _secondsOffsetEdit->setAlignment(Qt::AlignRight);
+      _secondsOffsetEdit->setText("0");
+      _secondsOffsetEdit->setValidator(new QIntValidator(this));
+      grid->addWidget(_secondsOffsetEdit, 2, 1, 1, 5);
 
     vbox->addLayout(grid);
 
@@ -86,6 +94,13 @@ void GeoLocationDialog::browse()
       _buttonBox->button(QDialogButtonBox::Ok)->setEnabled(_points.size() > 0);
     }
   }
+}
+
+void GeoLocationDialog::accept()
+{
+  _secondsOffset = _secondsOffsetEdit->text().toInt();
+
+  QDialog::accept();
 }
 
 void GeoLocationDialog::parseXML(QFile &xmlFile, int &tracks, int &segments, QVector<TrkPt> &points)
@@ -139,7 +154,7 @@ void GeoLocationDialog::parseTrkSeg(QXmlStreamReader &xml, QVector<TrkPt> &point
 
       if (xml.attributes().hasAttribute("lat"))
       {
-        trkPt.latitude = xml.attributes().value("lat").toDouble();
+        trkPt.latitude = xml.attributes().value("lat").toString().toDouble();
       }
       else
       {
@@ -148,7 +163,7 @@ void GeoLocationDialog::parseTrkSeg(QXmlStreamReader &xml, QVector<TrkPt> &point
 
       if (xml.attributes().hasAttribute("lon"))
       {
-        trkPt.longitude = xml.attributes().value("lon").toDouble();
+        trkPt.longitude = xml.attributes().value("lon").toString().toDouble();
       }
       else
       {

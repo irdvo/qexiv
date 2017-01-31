@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QImage>
 
-#include "Exiv2Fetcher.h"
+#include "Exiv2ModelFetcher.h"
 #include "Exiv2Updater.h"
 
 class QAction;
@@ -46,6 +46,8 @@ private slots:
   void showMap();
   void selectInDirectory(const QModelIndex &);
   void updateDescription();
+  void updateLatitude();
+  void updateLongitude();
   void imageUpdated();
   void exifFetched();
   void directoryLoaded(const QString &);
@@ -113,6 +115,10 @@ private:
   QLineEdit   *_imageDescription;
   QPushButton *_setButton;
   QPushButton *_nextButton;
+  QLineEdit   *_latitudeEdit;
+  QPushButton *_latitudeButton;
+  QLineEdit   *_longitudeEdit;
+  QPushButton *_longitudeButton;
 
   // Image
   QLabel      *_imageLabel;
