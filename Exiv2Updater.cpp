@@ -4,6 +4,7 @@
 #else
 #include <QtGui>
 #endif
+#include <cmath>
 
 #include "Exiv2Updater.h"
 
@@ -39,82 +40,55 @@ bool Exiv2Updater::update(const QString &imageFilename, const QString &imageDesc
   return true;
 }
 
-// -- Update the latitude in the image
-bool Exiv2Updater::updateLatitude(const QString &imageFilename, double latitude)
+// -- Convert position to degrees
+QString Exiv2Updater::position2Degrees(double position)
 {
-  if (state() != QProcess::NotRunning)
-  {
-    return false;
-  }
-
-  QString GPSRef = "N";
-
-  if (latitude < 0)
-  {
-    GPSRef = "S";
-    latitude = -latitude;
-  }
-
   double degrees = 0.0;
   double minutes = 0.0;
   double seconds = 0.0;
 
-  latitude = modf(latitude, &degrees);
+  position = modf(position, &degrees);
 
-  latitude *= 60.0;
+  position *= 60.0;
 
-  latitude = modf(latitude, &minutes);
+  position = modf(position, &minutes);
 
-  latitude *= (60.0 * 100.0);
+  position *= (60.0 * 100.0);
 
-  latitude = modf(latitude, &seconds);
+  position = modf(position, &seconds);
 
-  QString param = QString("%1/1 %2/1 %3/100").arg((int) degrees).arg((int) minutes).arg((int) seconds);
-
-  QStringList parameters;
-
-  parameters << "modify" << "-M" << QString("set Exif.GPSInfo.GPSLatitude %1").arg(param) << "-M" << QString("set Exif.GPSInfo.GPSLatitudeRef %2").arg(GPSRef) << imageFilename;
-
-  start("exiv2", parameters);
-
-  return true;
+  return QString("%1/1 %2/1 %3/100").arg((int) degrees).arg((int) minutes).arg((int) seconds);
 }
 
-// -- Update the longitude in the image
-bool Exiv2Updater::updateLongitude(const QString &imageFilename, double longitude)
+// -- Update the latitude in the image
+bool Exiv2Updater::updateGPSLocation(const QString &imageFilename, bool doLatitude, double latitude, bool doLongitude, double longitude)
 {
   if (state() != QProcess::NotRunning)
   {
     return false;
   }
 
-  QString GPSRef = "E";
-
-  if (longitude < 0)
-  {
-    GPSRef = "W";
-    longitude = -longitude;
-  }
-
-  double degrees = 0.0;
-  double minutes = 0.0;
-  double seconds = 0.0;
-
-  longitude = modf(longitude, &degrees);
-
-  longitude *= 60.0;
-
-  longitude = modf(longitude, &minutes);
-
-  longitude *= (60.0 * 100.0);
-
-  longitude = modf(longitude, &seconds);
-
-  QString param = QString("%1/1 %2/1 %3/100").arg((int) degrees).arg((int) minutes).arg((int) seconds);
-
   QStringList parameters;
 
-  parameters << "modify" << "-M" << QString("set Exif.GPSInfo.GPSLongitude %1").arg(param) << "-M" << QString("set Exif.GPSInfo.GPSLongitudeRef %1").arg(GPSRef) << imageFilename;
+  parameters << "modify";
+
+  if (doLatitude)
+  {
+    QString GPSRef = (latitude < 0 ? "S" : "N");
+
+    parameters << "-M" << QString("set Exif.GPSInfo.GPSLatitude %1").arg(position2Degrees(std::abs(latitude)))
+               << "-M" << QString("set Exif.GPSInfo.GPSLatitudeRef %1").arg(GPSRef);
+  }
+
+  if (doLongitude)
+  {
+    QString GPSRef = (longitude < 0 ? "W" : "E");
+
+    parameters << "-M" << QString("set Exif.GPSInfo.GPSLongitude %1").arg(position2Degrees(std::abs(longitude)))
+               << "-M" << QString("set Exif.GPSInfo.GPSLongitudeRef %1").arg(GPSRef);
+  }
+
+  parameters << imageFilename;
 
   start("exiv2", parameters);
 

@@ -1,20 +1,24 @@
 #ifndef _GEOLOCATIONDIALOG_H
 #define _GEOLOCATIONDIALOG_H
 
+#include "Exiv2Updater.h"
+
 #include <QDialog>
+#include <QModelIndex>
 
 class QLineEdit;
 class QPushButton;
 class QFile;
 class QXmlStreamReader;
 class QDialogButtonBox;
+class QFileSystemModel;
 
 class GeoLocationDialog : public QDialog
 {
   Q_OBJECT
 
 public:
-  GeoLocationDialog(QWidget *parent = 0);
+  GeoLocationDialog(QFileSystemModel &fileSystemModel, QModelIndex index, QWidget *parent = 0);
   ~GeoLocationDialog();
 
 private slots:
@@ -28,8 +32,7 @@ public:
     qint64 secsToEpoch;
   };
 
-  QVector<TrkPt> &trkPts() { return _points; }
-  int             secondsOffset() { return _secondsOffset; }
+  int imagesUpdated() const { return _imagesUpdated; }
 
 private:
   void accept();
@@ -41,7 +44,7 @@ private:
 
 private:
   QVector<TrkPt>    _points;
-  int               _secondsOffset;
+  int               _imagesUpdated;
 
   QLineEdit        *_filenameEdit;
   QPushButton      *_browseButton;
@@ -50,6 +53,11 @@ private:
   QLineEdit        *_pointsEdit;
   QLineEdit        *_secondsOffsetEdit;
   QDialogButtonBox *_buttonBox;
+
+  QFileSystemModel &_fileSystemModel;
+  QModelIndex       _index;
+
+  Exiv2Updater      _exiv2Updater;
 };
 
 #endif

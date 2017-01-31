@@ -8,11 +8,13 @@
 #include "GeoLocationDialog.h"
 
 
-GeoLocationDialog::GeoLocationDialog(QWidget *parent) :
+GeoLocationDialog::GeoLocationDialog(QFileSystemModel &fileSystemModel, QModelIndex index, QWidget *parent) :
   QDialog(parent),
-  _secondsOffset(0)
+  _imagesUpdated(0),
+  _fileSystemModel(fileSystemModel),
+  _index(index)
 {
-  setWindowTitle(tr("Geolocation"));
+  setWindowTitle(tr("Update the GPS location in all images based on a GPX file"));
 
   QVBoxLayout *vbox = new QVBoxLayout(this);
 
@@ -98,7 +100,21 @@ void GeoLocationDialog::browse()
 
 void GeoLocationDialog::accept()
 {
-  _secondsOffset = _secondsOffsetEdit->text().toInt();
+  int secondsOffset = _secondsOffsetEdit->text().toInt();
+
+  int col = _index.column();
+  int row = _index.row();
+
+  while (_index != QModelIndex())
+  {
+    if (!_fileSystemModel.isDir(_index))
+    {
+      QMessageBox::about(this, "File", _fileSystemModel.fileName(_index));
+    }
+
+    _index = _index.sibling(++row, col);
+  }
+
 
   QDialog::accept();
 }

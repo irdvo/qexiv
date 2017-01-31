@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QImage>
+#include <QModelIndex>
 
 #include "Exiv2ModelFetcher.h"
 #include "Exiv2Updater.h"
@@ -77,6 +78,7 @@ private:
   void restoreSettings();
   void saveSettings();
 
+  QModelIndex getFirstIndex();
   void deselectDirectorySelections();
 
   QMenu       *_fileMenu;

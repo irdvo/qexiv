@@ -14,8 +14,7 @@ public:
   // -- Commands --------------------------------------------------------------
   bool update(const QString &imageFilename, const QString &imageDescription);
 
-  bool updateLatitude (const QString &imageFilename, double latitude);
-  bool updateLongitude(const QString &imageFilename, double longitude);
+  bool updateGPSLocation (const QString &imageFilename, bool doLatitude, double latitude, bool doLongitude, double longitude);
 
 private slots:
   void reportError();
@@ -24,6 +23,9 @@ private slots:
 
 signals:
   void updated();
+
+private:
+  QString position2Degrees(double position);
 };
 
 #endif

@@ -421,11 +421,11 @@ void MainWindow::parentDirectory()
 
 void MainWindow::geoLocate()
 {
-  GeoLocationDialog *dialog = new GeoLocationDialog(this);
+  GeoLocationDialog *dialog = new GeoLocationDialog(*_fileSystemModel, getFirstIndex(), this);
 
   if (dialog->exec() == QDialog::Accepted)
   {
-
+    QMessageBox::information(this, tr("Images updated"), tr("There are %1 image(s) updated.").arg(dialog->imagesUpdated()));
   }
 
   delete dialog;
@@ -540,12 +540,12 @@ void MainWindow::updateDescription()
 
 void MainWindow::updateLatitude()
 {
-  _exiv2Updater.updateLatitude(_imageFilename, _latitudeEdit->text().toDouble());
+  _exiv2Updater.updateGPSLocation(_imageFilename, true, _latitudeEdit->text().toDouble(), false, 0.0);
 }
 
 void MainWindow::updateLongitude()
 {
-  _exiv2Updater.updateLongitude(_imageFilename, _longitudeEdit->text().toDouble());
+  _exiv2Updater.updateGPSLocation(_imageFilename, false, 0.0, true, _longitudeEdit->text().toDouble());
 }
 
 void MainWindow::exifFetched()
@@ -585,15 +585,8 @@ void MainWindow::imageUpdated()
   _exiv2ModelFetcher.fetch(_imageFilename);
 }
 
-void MainWindow::selectFirstImage()
+QModelIndex MainWindow::getFirstIndex()
 {
-  // Strange qt bug: directoryLoaded event is too early -> indices are not yet correct
-  QTime waitTime = QTime::currentTime().addMSecs( 500 );
-  while (QTime::currentTime() < waitTime)
-  {
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-  }
-
   int col = _directoryView->modelColumn();
   int row = 0;
 
@@ -606,7 +599,19 @@ void MainWindow::selectFirstImage()
     sibling = sibling.sibling(++row, col);
   }
 
-  selectInDirectory(sibling);
+  return sibling;
+}
+
+void MainWindow::selectFirstImage()
+{
+  // Strange qt bug: directoryLoaded event is too early -> indices are not yet correct
+  QTime waitTime = QTime::currentTime().addMSecs( 500 );
+  while (QTime::currentTime() < waitTime)
+  {
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+  }
+
+  selectInDirectory(getFirstIndex());
 }
 
 void MainWindow::selectPrevImage()
