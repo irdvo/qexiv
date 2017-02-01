@@ -64,13 +64,14 @@ GeoLocationDialog::GeoLocationDialog(QFileSystemModel &fileSystemModel, QModelIn
 
     connect(_buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+
+    connect(&_exiv2Fetcher, SIGNAL(fetched(const QString)), this, SLOT(dateTimeFetched(const QString)));
 }
 
 GeoLocationDialog::~GeoLocationDialog()
 {
 
 }
-
 
 void GeoLocationDialog::browse()
 {
@@ -98,6 +99,11 @@ void GeoLocationDialog::browse()
   }
 }
 
+void GeoLocationDialog::dateTimeFetched(const QString string)
+{
+  QMessageBox::about(this, "DateTime", string);
+}
+
 void GeoLocationDialog::accept()
 {
   int secondsOffset = _secondsOffsetEdit->text().toInt();
@@ -109,14 +115,14 @@ void GeoLocationDialog::accept()
   {
     if (!_fileSystemModel.isDir(_index))
     {
-      QMessageBox::about(this, "File", _fileSystemModel.fileName(_index));
+      _exiv2Fetcher.fetchDateTime(_fileSystemModel.fileInfo(_index).absoluteFilePath());
     }
 
     _index = _index.sibling(++row, col);
   }
 
 
-  QDialog::accept();
+  // QDialog::accept();
 }
 
 void GeoLocationDialog::parseXML(QFile &xmlFile, int &tracks, int &segments, QVector<TrkPt> &points)

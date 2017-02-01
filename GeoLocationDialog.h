@@ -1,6 +1,7 @@
 #ifndef _GEOLOCATIONDIALOG_H
 #define _GEOLOCATIONDIALOG_H
 
+#include "Exiv2Fetcher.h"
 #include "Exiv2Updater.h"
 
 #include <QDialog>
@@ -23,6 +24,7 @@ public:
 
 private slots:
   void browse();
+  void dateTimeFetched(const QString string);
 
 public:
   struct TrkPt
@@ -57,6 +59,7 @@ private:
   QFileSystemModel &_fileSystemModel;
   QModelIndex       _index;
 
+  Exiv2Fetcher      _exiv2Fetcher;
   Exiv2Updater      _exiv2Updater;
 };
 
