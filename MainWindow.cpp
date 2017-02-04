@@ -421,7 +421,24 @@ void MainWindow::parentDirectory()
 
 void MainWindow::geoLocate()
 {
-  GeoLocationDialog *dialog = new GeoLocationDialog(*_fileSystemModel, getFirstIndex(), this);
+  QVector<QString> filenames;
+
+  QModelIndex index = getFirstIndex();
+
+  int row = index.row();
+  int col = index.column();
+
+  while (index != QModelIndex())
+  {
+    if (!_fileSystemModel->isDir(index))
+    {
+      filenames.append(_fileSystemModel->fileInfo(index).absoluteFilePath());
+    }
+
+    index = index.sibling(++row, col);
+  }
+
+  GeoLocationDialog *dialog = new GeoLocationDialog(filenames, this);
 
   if (dialog->exec() == QDialog::Accepted)
   {

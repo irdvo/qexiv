@@ -8,11 +8,10 @@
 #include "GeoLocationDialog.h"
 
 
-GeoLocationDialog::GeoLocationDialog(QFileSystemModel &fileSystemModel, QModelIndex index, QWidget *parent) :
+GeoLocationDialog::GeoLocationDialog(const QVector<QString> &imageFilenames, QWidget *parent) :
   QDialog(parent),
-  _imagesUpdated(0),
-  _fileSystemModel(fileSystemModel),
-  _index(index)
+  _imageFilenames(imageFilenames),
+  _imagesUpdated(0)
 {
   setWindowTitle(tr("Update the GPS location in all images based on a GPX file"));
 
@@ -30,17 +29,18 @@ GeoLocationDialog::GeoLocationDialog(QFileSystemModel &fileSystemModel, QModelIn
       connect(_browseButton, SIGNAL(clicked()), this, SLOT(browse()));
       grid->addWidget(_browseButton, 0, 5);
 
-      grid->addWidget(new QLabel(tr("Tracks:")), 1, 0);
+      grid->addWidget(new QLabel(tr("Images:")), 1, 0);
+      _imagesEdit = new QLineEdit;
+      _imagesEdit->setEnabled(false);
+      _imagesEdit->setAlignment(Qt::AlignRight);
+      _imagesEdit->setText(tr("%1").arg(_imageFilenames.size()));
+      grid->addWidget(_imagesEdit, 1, 1);
+
+      grid->addWidget(new QLabel(tr("Tracks:")), 1, 2);
       _tracksEdit = new QLineEdit;
       _tracksEdit->setEnabled(false);
       _tracksEdit->setAlignment(Qt::AlignRight);
-      grid->addWidget(_tracksEdit, 1, 1);
-
-      grid->addWidget(new QLabel(tr("Segments:")), 1, 2);
-      _segmentsEdit = new QLineEdit;
-      _segmentsEdit->setEnabled(false);
-      _segmentsEdit->setAlignment(Qt::AlignRight);
-      grid->addWidget(_segmentsEdit, 1, 3);
+      grid->addWidget(_tracksEdit, 1, 3);
 
       grid->addWidget(new QLabel(tr("Points:")), 1, 4);
       _pointsEdit = new QLineEdit;
@@ -62,10 +62,12 @@ GeoLocationDialog::GeoLocationDialog(QFileSystemModel &fileSystemModel, QModelIn
 
     vbox->addWidget(_buttonBox);
 
-    connect(_buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
-    connect(_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+  connect(_buttonBox, SIGNAL(accepted()), this, SLOT(doGeoLocate()));
+  connect(_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
 
-    connect(&_exiv2Fetcher, SIGNAL(fetched(const QString)), this, SLOT(dateTimeFetched(const QString)));
+  connect(&_exiv2Fetcher, SIGNAL(fetched(const QString)), this, SLOT(dateTimeFetched(const QString)));
+  connect(&_exiv2Fetcher, SIGNAL(fetched()),              this, SLOT(dateTimeFetched()));
+  connect(&_exiv2Updater, SIGNAL(updated()),              this, SLOT(doNextImage()));
 }
 
 GeoLocationDialog::~GeoLocationDialog()
@@ -86,12 +88,10 @@ void GeoLocationDialog::browse()
     if (xmlFile.open(QIODevice::ReadOnly))
     {
       int tracks   = 0;
-      int segments = 0;
 
-      parseXML(xmlFile, tracks, segments, _points);
+      parseXML(xmlFile, tracks, _points);
 
       _tracksEdit  ->setText(tr("%1").arg(tracks));
-      _segmentsEdit->setText(tr("%1").arg(segments));
       _pointsEdit  ->setText(tr("%1").arg(_points.size()));
 
       _buttonBox->button(QDialogButtonBox::Ok)->setEnabled(_points.size() > 0);
@@ -99,40 +99,63 @@ void GeoLocationDialog::browse()
   }
 }
 
+void GeoLocationDialog::doGeoLocate()
+{
+  _imageFilename = _imageFilenames.begin();
+
+  if (_imageFilename != _imageFilenames.end())
+  {
+    _exiv2Fetcher.fetchDateTime(*_imageFilename);
+  }
+}
+
 void GeoLocationDialog::dateTimeFetched(const QString string)
 {
-  QMessageBox::about(this, "DateTime", string);
+  // Process the date time
+  _imageDateTime = QDateTime::fromString(string.trimmed(), "yyyy:MM:dd HH:mm:ss");
 }
 
-void GeoLocationDialog::accept()
+void GeoLocationDialog::dateTimeFetched()
 {
-  int secondsOffset = _secondsOffsetEdit->text().toInt();
+  double latitude;
+  double longitude;
 
-  int col = _index.column();
-  int row = _index.row();
-
-  while (_index != QModelIndex())
+  if ((_imageDateTime.isValid()) && (lookupGPSLocation(latitude, longitude)))
   {
-    if (!_fileSystemModel.isDir(_index))
-    {
-      _exiv2Fetcher.fetchDateTime(_fileSystemModel.fileInfo(_index).absoluteFilePath());
-    }
+    _exiv2Updater.updateGPSLocation(*_imageFilename, true, latitude, true, longitude);
+    _imagesUpdated++;
+  }
+  else
+  {
+    doNextImage();
+  }
+}
 
-    _index = _index.sibling(++row, col);
+void GeoLocationDialog::doNextImage()
+{
+  if (_imageFilename != _imageFilenames.end())
+  {
+    ++_imageFilename;
   }
 
-
-  // QDialog::accept();
+  if (_imageFilename != _imageFilenames.end())
+  {
+    _exiv2Fetcher.fetchDateTime(*_imageFilename);
+  }
+  else
+  {
+    QDialog::accept();
+  }
 }
 
-void GeoLocationDialog::parseXML(QFile &xmlFile, int &tracks, int &segments, QVector<TrkPt> &points)
+
+void GeoLocationDialog::parseXML(QFile &xmlFile, int &tracks, QVector<TrkPt> &points)
 {
   QXmlStreamReader xml;
 
   xml.setDevice(&xmlFile);
 
   tracks   = 0;
-  segments = 0;
 
   points.clear();
 
@@ -141,7 +164,7 @@ void GeoLocationDialog::parseXML(QFile &xmlFile, int &tracks, int &segments, QVe
   {
     if ((xml.isStartElement()) && (xml.name().compare("trk", Qt::CaseInsensitive) == 0))
     {
-      parseTrk(xml, segments, points);
+      parseTrk(xml, points);
       tracks++;
     }
 
@@ -149,7 +172,7 @@ void GeoLocationDialog::parseXML(QFile &xmlFile, int &tracks, int &segments, QVe
   }
 }
 
-void GeoLocationDialog::parseTrk(QXmlStreamReader &xml, int &segments, QVector<TrkPt> &points)
+void GeoLocationDialog::parseTrk(QXmlStreamReader &xml, QVector<TrkPt> &points)
 {
   xml.readNext();
   while ((!xml.isEndElement()) || (xml.name().compare("trk", Qt::CaseInsensitive) != 0))
@@ -157,7 +180,6 @@ void GeoLocationDialog::parseTrk(QXmlStreamReader &xml, int &segments, QVector<T
     if ((xml.isStartElement()) && (xml.name().compare("trkseg", Qt::CaseInsensitive) == 0))
     {
       parseTrkSeg(xml, points);
-      segments++;
     }
 
     xml.readNext();
@@ -215,20 +237,80 @@ bool GeoLocationDialog::parseTime(QXmlStreamReader &xml, qint64 &secsToEpoch)
   {
     if ((xml.isStartElement()) && (xml.name().compare("time", Qt::CaseSensitive) == 0))
     {
-      QDateTime dateTime = QDateTime::fromString(xml.text().toString(), Qt::ISODate);
+      xml.readNext();
 
+      while ((!xml.isEndElement()) || (xml.name().compare("time", Qt::CaseSensitive) != 0))
+      {
+        if (xml.isCharacters())
+        {
+          QDateTime dateTime = QDateTime::fromString(xml.text().toString(), Qt::ISODate);
+
+          if (dateTime.isValid())
+          {
 #if QT_VERSION >= 0x050800
-      secsToEpoch = dateTime.toSecsSinceEpoch();
+            secsToEpoch = dateTime.toSecsSinceEpoch();
 #else
-      secsToEpoch = dateTime.toMSecsSinceEpoch() / 1000;
+            secsToEpoch = dateTime.toMSecsSinceEpoch() / 1000;
 #endif
-      valid = true;
+            valid = true;
+          }
+        }
+
+        xml.readNext();
+      }
     }
 
     xml.readNext();
   }
 
   return valid;
+}
+
+bool GeoLocationDialog::lookupGPSLocation(double &latitude, double &longitude)
+{
+  if (_points.empty())
+  {
+    return false;
+  }
+
+#if QT_VERSION >= 0x050800
+  qint64 imageSecsToEpoch = _imageDateTime.toSecsSinceEpoch();
+#else
+  qint64 imageSecsToEpoch = _imageDateTime.toMSecsSinceEpoch() / 1000;
+#endif
+
+  imageSecsToEpoch += _secondsOffsetEdit->text().toInt();
+
+  if ((imageSecsToEpoch < _points.first().secsToEpoch) || (imageSecsToEpoch > _points.last().secsToEpoch))
+  {
+    return false;
+  }
+
+  TrkPt lastPoint = _points.first();
+
+  for (QVector<TrkPt>::iterator iter = _points.begin(); iter != _points.end(); ++iter)
+  {
+    if (imageSecsToEpoch == iter->secsToEpoch)
+    {
+      latitude  = iter->latitude;
+      longitude = iter->longitude;
+
+      return true;
+    }
+    else if (imageSecsToEpoch < iter->secsToEpoch)
+    {
+      latitude  = lastPoint.latitude  + (iter->latitude  - lastPoint.latitude)  * ((double)(imageSecsToEpoch - lastPoint.secsToEpoch) / (double)(iter->secsToEpoch - lastPoint.secsToEpoch));
+      longitude = lastPoint.longitude + (iter->longitude - lastPoint.longitude) * ((double)(imageSecsToEpoch - lastPoint.secsToEpoch) / (double)(iter->secsToEpoch - lastPoint.secsToEpoch));
+
+      return true;
+    }
+    else
+    {
+      lastPoint = *iter;
+    }
+  }
+
+  return false;
 }
 
 // ============================================================================

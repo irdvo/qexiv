@@ -90,6 +90,8 @@ bool Exiv2Updater::updateGPSLocation(const QString &imageFilename, bool doLatitu
 
   parameters << imageFilename;
 
+  //QMessageBox::information(0, "Update", parameters.join(" "));
+
   start("exiv2", parameters);
 
   return true;

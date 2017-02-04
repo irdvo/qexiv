@@ -196,7 +196,7 @@ bool ExivModel::scanGPSLocation(double &location, const QString &value)
 
   location = degrees.toDouble() + minutes.toDouble() / 60.0 + seconds.toDouble() / 3600.0;
 
-  return (!degrees.isEmpty()) && (!minutes.isEmpty()) && (!seconds.isEmpty());
+  return (!degrees.isEmpty());
 }
 
 // ----------------------------------------------------------------------------

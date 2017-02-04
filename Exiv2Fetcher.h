@@ -21,6 +21,7 @@ private slots:
 
 signals:
   void fetched(const QString data);
+  void fetched();
 };
 
 #endif

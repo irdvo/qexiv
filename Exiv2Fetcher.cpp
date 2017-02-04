@@ -55,7 +55,7 @@ void Exiv2Fetcher::reportData()
 
 void Exiv2Fetcher::done(int, ExitStatus)
 {
-
+  emit fetched();
 }
 
 // ----------------------------------------------------------------------------
