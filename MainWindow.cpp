@@ -162,6 +162,7 @@ void MainWindow::createActions()
   _showMapAction = new QAction(showMapIcon, tr("Show location on &Map"), this);
   _showMapAction->setShortcut(tr("Ctrl+M"));
   _showMapAction->setEnabled(false);
+  _showMapAction->setStatusTip(tr("Show location on Map"));
   connect(_showMapAction, SIGNAL(triggered()), this, SLOT(showMap()));
 
   QIcon prevImageIcon = style->standardIcon(QStyle::SP_ArrowBack);
@@ -172,7 +173,10 @@ void MainWindow::createActions()
   _nextImageAction = new QAction(nextImageIcon, tr("Show next image"), this);
   connect(_nextImageAction, SIGNAL(triggered()), this, SLOT(selectNextImage()));
 
-  _geoLocateAction = new QAction(tr("GeoLocation..."), this);
+  QIcon showLocateIcon = QIcon(":/icons/locate.png");
+  _geoLocateAction = new QAction(showLocateIcon, tr("Geo&Locate images..."), this);
+  _geoLocateAction->setShortcut(tr("Ctrl+L"));
+  _geoLocateAction->setStatusTip(tr("Update GPS location for all images"));
   connect(_geoLocateAction, SIGNAL(triggered()), this, SLOT(geoLocate()));
 
   _aboutAction = new QAction(tr("&About"), this);
@@ -221,6 +225,8 @@ void MainWindow::createToolBars()
   _toolBar->addAction(_nextImageAction);
   _toolBar->addSeparator();
   _toolBar->addAction(_showMapAction);
+  _toolBar->addSeparator();
+  _toolBar->addAction(_geoLocateAction);
 }
 
 void MainWindow::createStatusBar()
