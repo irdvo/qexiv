@@ -22,6 +22,7 @@ class QFileSystemModel;
 class QDockWidget;
 class QPushButton;
 class QLineEdit;
+class QPlainTextEdit;
 
 class MainWindow : public QMainWindow
 {
@@ -64,6 +65,7 @@ private:
   void createStatusBar();
   void createMetadataDock();
   void createDirectoryDock();
+  void createMessagesDock();
 
   void setTitle();
   void updateActions();
@@ -81,54 +83,58 @@ private:
   QModelIndex getFirstIndex();
   void deselectDirectorySelections();
 
-  QMenu       *_fileMenu;
-  QMenu       *_imageMenu;
-  QMenu       *_windowMenu;
-  QMenu       *_helpMenu;
-  QToolBar    *_toolBar;
+  QMenu            *_fileMenu;
+  QMenu            *_imageMenu;
+  QMenu            *_windowMenu;
+  QMenu            *_helpMenu;
+  QToolBar         *_toolBar;
 
-  QAction     *_openDirectoryAction;
-  QAction     *_parentDirectoryAction;
-  QAction     *_quitAction;
-  QAction     *_aboutAction;
-  QAction     *_aboutQtAction;
+  QAction          *_openDirectoryAction;
+  QAction          *_parentDirectoryAction;
+  QAction          *_quitAction;
+  QAction          *_aboutAction;
+  QAction          *_aboutQtAction;
 
-  QAction     *_zoomInAction;
-  QAction     *_zoomOutAction;
-  QAction     *_setNormalSizeAction;
-  QAction     *_setFullSizeAction;
-  QAction     *_fitToWindowAction;
-  QAction     *_showMapAction;
+  QAction          *_zoomInAction;
+  QAction          *_zoomOutAction;
+  QAction          *_setNormalSizeAction;
+  QAction          *_setFullSizeAction;
+  QAction          *_fitToWindowAction;
+  QAction          *_showMapAction;
 
-  QAction     *_prevImageAction;
-  QAction     *_nextImageAction;
+  QAction          *_prevImageAction;
+  QAction          *_nextImageAction;
 
-  QAction     *_geoLocateAction;
+  QAction          *_geoLocateAction;
 
   // Properties dock
-  QTableView  *_exifView;
+  QTableView       *_exifView;
 
   // Directory dock
-  QDockWidget *_directoryDock;
-  QListView   *_directoryView;
+  QDockWidget      *_directoryDock;
+  QListView        *_directoryView;
   QFileSystemModel *_fileSystemModel;
 
+  // Message dock
+  QDockWidget      *_messagesDock;
+  QPlainTextEdit   *_messagesEdit;
+
   // Description dock
-  QLineEdit   *_imageDescription;
-  QPushButton *_setButton;
-  QPushButton *_nextButton;
-  QLineEdit   *_latitudeEdit;
-  QPushButton *_latitudeButton;
-  QLineEdit   *_longitudeEdit;
-  QPushButton *_longitudeButton;
+  QLineEdit        *_imageDescription;
+  QPushButton      *_setButton;
+  QPushButton      *_nextButton;
+  QLineEdit        *_latitudeEdit;
+  QPushButton      *_latitudeButton;
+  QLineEdit        *_longitudeEdit;
+  QPushButton      *_longitudeButton;
 
   // Image
-  QLabel      *_imageLabel;
-  QScrollArea *_imageScrollArea;
-  QString      _imageFilename;
-  QString      _imagePath;
-  QImage       _image;
-  double       _scaleFactor;
+  QLabel           *_imageLabel;
+  QScrollArea      *_imageScrollArea;
+  QString           _imageFilename;
+  QString           _imagePath;
+  QImage            _image;
+  double            _scaleFactor;
 
   // Exiv2
   Exiv2ModelFetcher _exiv2ModelFetcher;

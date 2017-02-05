@@ -37,6 +37,7 @@ MainWindow::MainWindow(int argc, char *argv[]) :
   createStatusBar();
   createMetadataDock();
   createDirectoryDock();
+  createMessagesDock();
 
   restoreSettings();
 
@@ -278,6 +279,22 @@ void MainWindow::createDirectoryDock()
     _directoryDock->setWidget(_directoryView);
     addDockWidget(Qt::LeftDockWidgetArea, _directoryDock);;
   _windowMenu->addAction(_directoryDock->toggleViewAction());
+}
+
+void MainWindow::createMessagesDock()
+{
+  _messagesDock = new QDockWidget(tr("Messages"), this);
+    _messagesDock->setObjectName("Messagess");
+    _messagesDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+
+    _messagesEdit = new QPlainTextEdit(this);
+    _messagesEdit->setReadOnly(true);
+    _messagesEdit->setLineWrapMode(QPlainTextEdit::NoWrap);
+    _messagesEdit->appendPlainText(tr("Welcome"));
+
+    _messagesDock->setWidget(_messagesEdit);
+    addDockWidget(Qt::LeftDockWidgetArea, _messagesDock);;
+  _windowMenu->addAction(_messagesDock->toggleViewAction());
 }
 
 void MainWindow::updateActions()
