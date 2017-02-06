@@ -12,7 +12,6 @@ Exiv2ModelFetcher::Exiv2ModelFetcher(QObject *parent) :
   QProcess(parent),
   _exivModel()
 {
-  /// todo: better error reporting
   connect(this, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(done(int, QProcess::ExitStatus)));
   connect(this, SIGNAL(readyReadStandardError()),            this, SLOT(reportError()));
   connect(this, SIGNAL(readyReadStandardOutput()),           this, SLOT(reportData()));
@@ -45,9 +44,7 @@ bool Exiv2ModelFetcher::fetch(const QString &imageFilename)
 // -- Slots -------------------------------------------------------------------
 void Exiv2ModelFetcher::reportError()
 {
-  QByteArray buffer = readAllStandardError();
-
-  QMessageBox::critical(0, "exiv2 error", buffer);
+  emit failed(QString(readAllStandardError()));
 }
 
 void Exiv2ModelFetcher::reportData()

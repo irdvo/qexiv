@@ -34,7 +34,6 @@ MainWindow::MainWindow(int argc, char *argv[]) :
   createActions();
   createMenus();
   createToolBars();
-  createStatusBar();
   createMetadataDock();
   createDirectoryDock();
   createMessagesDock();
@@ -230,11 +229,6 @@ void MainWindow::createToolBars()
   _toolBar->addAction(_geoLocateAction);
 }
 
-void MainWindow::createStatusBar()
-{
-  statusBar()->showMessage(tr("Ready"));
-}
-
 void MainWindow::createMetadataDock()
 {
   QDockWidget *dock = new QDockWidget(tr("Metadata"), this);
@@ -287,14 +281,16 @@ void MainWindow::createMessagesDock()
     _messagesDock->setObjectName("Messagess");
     _messagesDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
-    _messagesEdit = new QPlainTextEdit(this);
-    _messagesEdit->setReadOnly(true);
-    _messagesEdit->setLineWrapMode(QPlainTextEdit::NoWrap);
-    _messagesEdit->appendPlainText(tr("Welcome"));
+    _messagesBox = new QPlainTextEdit(this);
+    _messagesBox->setReadOnly(true);
+    _messagesBox->setLineWrapMode(QPlainTextEdit::NoWrap);
 
-    _messagesDock->setWidget(_messagesEdit);
-    addDockWidget(Qt::LeftDockWidgetArea, _messagesDock);;
+    _messagesDock->setWidget(_messagesBox);
+    addDockWidget(Qt::RightDockWidgetArea, _messagesDock);;
   _windowMenu->addAction(_messagesDock->toggleViewAction());
+
+  connect(&_exiv2ModelFetcher, SIGNAL(failed(const QString)), _messagesBox, SLOT(appendPlainText(const QString)));
+  connect(&_exiv2Updater,      SIGNAL(failed(const QString)), _messagesBox, SLOT(appendPlainText(const QString)));
 }
 
 void MainWindow::updateActions()
@@ -461,7 +457,7 @@ void MainWindow::geoLocate()
     index = index.sibling(++row, col);
   }
 
-  GeoLocationDialog *dialog = new GeoLocationDialog(filenames, this);
+  GeoLocationDialog *dialog = new GeoLocationDialog(filenames, _messagesBox, this);
 
   if (dialog->exec() == QDialog::Accepted)
   {
@@ -588,6 +584,25 @@ void MainWindow::updateLongitude()
   _exiv2Updater.updateGPSLocation(_imageFilename, false, 0.0, true, _longitudeEdit->text().toDouble());
 }
 
+QString MainWindow::shortFilename(const QString &filename)
+{
+  QString noPath;
+
+  for (QString::const_iterator ch = filename.begin(); ch != filename.end(); ++ch)
+  {
+    if ((*ch == '/') || (*ch == ':'))
+    {
+      noPath.clear();
+    }
+    else
+    {
+      noPath.append(*ch);
+    }
+  }
+
+  return noPath;
+}
+
 void MainWindow::exifFetched()
 {
   // Exif data of image is fetched
@@ -611,11 +626,11 @@ void MainWindow::exifFetched()
       _longitudeEdit->setText("");
     }
 
-    statusBar()->showMessage(tr("Exif metadata fetched"));
+    _messagesBox->appendPlainText(tr("%1: Exif metadata fetched").arg(shortFilename(_imageFilename)));
   }
   else
   {
-    statusBar()->showMessage(tr("No exif metadata present in this image"));
+    _messagesBox->appendPlainText(tr("%1: No exif metadata present in this image").arg(shortFilename(_imageFilename)));
   }
 }
 

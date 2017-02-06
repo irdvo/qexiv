@@ -62,7 +62,6 @@ private:
   void createActions();
   void createMenus();
   void createToolBars();
-  void createStatusBar();
   void createMetadataDock();
   void createDirectoryDock();
   void createMessagesDock();
@@ -82,6 +81,9 @@ private:
 
   QModelIndex getFirstIndex();
   void deselectDirectorySelections();
+
+  static
+  QString shortFilename(const QString &filename);
 
   QMenu            *_fileMenu;
   QMenu            *_imageMenu;
@@ -117,7 +119,7 @@ private:
 
   // Message dock
   QDockWidget      *_messagesDock;
-  QPlainTextEdit   *_messagesEdit;
+  QPlainTextEdit   *_messagesBox;
 
   // Description dock
   QLineEdit        *_imageDescription;

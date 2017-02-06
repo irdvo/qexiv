@@ -8,9 +8,10 @@
 #include "GeoLocationDialog.h"
 
 
-GeoLocationDialog::GeoLocationDialog(const QVector<QString> &imageFilenames, QWidget *parent) :
+GeoLocationDialog::GeoLocationDialog(const QVector<QString> &imageFilenames, QPlainTextEdit *messagesBox, QWidget *parent) :
   QDialog(parent),
   _imageFilenames(imageFilenames),
+  _messagesBox(messagesBox),
   _imagesUpdated(0)
 {
   setWindowTitle(tr("Update the GPS location in all images based on a GPX file"));
@@ -62,12 +63,15 @@ GeoLocationDialog::GeoLocationDialog(const QVector<QString> &imageFilenames, QWi
 
     vbox->addWidget(_buttonBox);
 
-  connect(_buttonBox, SIGNAL(accepted()), this, SLOT(doGeoLocate()));
-  connect(_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+  connect(_buttonBox,     SIGNAL(accepted()),             this,         SLOT(doGeoLocate()));
+  connect(_buttonBox,     SIGNAL(rejected()),             this,         SLOT(reject()));
 
-  connect(&_exiv2Fetcher, SIGNAL(fetched(const QString)), this, SLOT(dateTimeFetched(const QString)));
-  connect(&_exiv2Fetcher, SIGNAL(fetched()),              this, SLOT(dateTimeFetched()));
-  connect(&_exiv2Updater, SIGNAL(updated()),              this, SLOT(doNextImage()));
+  connect(&_exiv2Fetcher, SIGNAL(fetched(const QString)), this,         SLOT(dateTimeFetched(const QString)));
+  connect(&_exiv2Fetcher, SIGNAL(fetched()),              this,         SLOT(dateTimeFetched()));
+  connect(&_exiv2Fetcher, SIGNAL(failed(const QString)),  _messagesBox, SLOT(appendPlainText(const QString)));
+
+  connect(&_exiv2Updater, SIGNAL(updated()),              this,         SLOT(doNextImage()));
+  connect(&_exiv2Updater, SIGNAL(failed(const QString)),  _messagesBox, SLOT(appendPlainText(const QString)));
 }
 
 GeoLocationDialog::~GeoLocationDialog()
@@ -122,11 +126,23 @@ void GeoLocationDialog::dateTimeFetched()
 
   if ((_imageDateTime.isValid()) && (lookupGPSLocation(latitude, longitude)))
   {
+    // ToDo: short filename
+    _messagesBox->appendPlainText(tr("%1: time %2 located on latitude:%3 and longitude:%4").arg(*_imageFilename).arg(_imageDateTime.toString("yyyy:MM:dd HH:mm:ss")).arg(latitude).arg(longitude));
+
     _exiv2Updater.updateGPSLocation(*_imageFilename, true, latitude, true, longitude);
     _imagesUpdated++;
   }
   else
   {
+    if (_imageDateTime.isValid())
+    {
+      _messagesBox->appendPlainText(tr("%1: time %2 not located").arg(*_imageFilename).arg(_imageDateTime.toString("yyyy:MM:dd HH:mm:ss")));
+    }
+    else
+    {
+      _messagesBox->appendPlainText(tr("%1: unknown time").arg(*_imageFilename));
+    }
+
     doNextImage();
   }
 }
@@ -162,7 +178,7 @@ void GeoLocationDialog::parseXML(QFile &xmlFile, int &tracks, QVector<TrkPt> &po
   xml.readNext();
   while (!xml.atEnd())
   {
-    if ((xml.isStartElement()) && (xml.name().compare("trk", Qt::CaseInsensitive) == 0))
+    if ((xml.isStartElement()) && (xml.name().compare(QString("trk"), Qt::CaseInsensitive) == 0))
     {
       parseTrk(xml, points);
       tracks++;
@@ -175,9 +191,9 @@ void GeoLocationDialog::parseXML(QFile &xmlFile, int &tracks, QVector<TrkPt> &po
 void GeoLocationDialog::parseTrk(QXmlStreamReader &xml, QVector<TrkPt> &points)
 {
   xml.readNext();
-  while ((!xml.isEndElement()) || (xml.name().compare("trk", Qt::CaseInsensitive) != 0))
+  while ((!xml.isEndElement()) || (xml.name().compare(QString("trk"), Qt::CaseInsensitive) != 0))
   {
-    if ((xml.isStartElement()) && (xml.name().compare("trkseg", Qt::CaseInsensitive) == 0))
+    if ((xml.isStartElement()) && (xml.name().compare(QString("trkseg"), Qt::CaseInsensitive) == 0))
     {
       parseTrkSeg(xml, points);
     }
@@ -189,9 +205,9 @@ void GeoLocationDialog::parseTrk(QXmlStreamReader &xml, QVector<TrkPt> &points)
 void GeoLocationDialog::parseTrkSeg(QXmlStreamReader &xml, QVector<TrkPt> &points)
 {
   xml.readNext();
-  while ((!xml.isEndElement()) || (xml.name().compare("trkseg", Qt::CaseInsensitive) != 0))
+  while ((!xml.isEndElement()) || (xml.name().compare(QString("trkseg"), Qt::CaseInsensitive) != 0))
   {
-    if ((xml.isStartElement()) && (xml.name().compare("trkpt", Qt::CaseInsensitive) == 0))
+    if ((xml.isStartElement()) && (xml.name().compare(QString("trkpt"), Qt::CaseInsensitive) == 0))
     {
       TrkPt trkPt;
       bool  valid = true;
@@ -233,13 +249,13 @@ bool GeoLocationDialog::parseTime(QXmlStreamReader &xml, qint64 &secsToEpoch)
 {
   bool valid = false;
 
-  while ((!xml.isEndElement()) || (xml.name().compare("trkpt", Qt::CaseSensitive) != 0))
+  while ((!xml.isEndElement()) || (xml.name().compare(QString("trkpt"), Qt::CaseSensitive) != 0))
   {
-    if ((xml.isStartElement()) && (xml.name().compare("time", Qt::CaseSensitive) == 0))
+    if ((xml.isStartElement()) && (xml.name().compare(QString("time"), Qt::CaseSensitive) == 0))
     {
       xml.readNext();
 
-      while ((!xml.isEndElement()) || (xml.name().compare("time", Qt::CaseSensitive) != 0))
+      while ((!xml.isEndElement()) || (xml.name().compare(QString("time"), Qt::CaseSensitive) != 0))
       {
         if (xml.isCharacters())
         {

@@ -26,6 +26,7 @@ private slots:
 
 signals:
   void fetched();
+  void failed(const QString message);
 
 private:
   void skipSpaces(const QByteArray &buffer, int &i);

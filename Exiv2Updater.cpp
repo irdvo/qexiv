@@ -12,7 +12,6 @@
 Exiv2Updater::Exiv2Updater(QObject *parent) :
   QProcess(parent)
 {
-  /// todo: better error reporting
   connect(this, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(done(int, QProcess::ExitStatus)));
   connect(this, SIGNAL(readyReadStandardError()),            this, SLOT(reportError()));
   connect(this, SIGNAL(readyReadStandardOutput()),           this, SLOT(reportData()));
@@ -100,9 +99,7 @@ bool Exiv2Updater::updateGPSLocation(const QString &imageFilename, bool doLatitu
 // -- Slots -------------------------------------------------------------------
 void Exiv2Updater::reportError()
 {
-  QByteArray buffer = readAllStandardError();
-
-  QMessageBox::critical(0, "exiv2 error", buffer);
+  emit failed(QString(readAllStandardError()));
 }
 
 void Exiv2Updater::reportData()

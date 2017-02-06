@@ -12,7 +12,6 @@
 Exiv2Fetcher::Exiv2Fetcher(QObject *parent) :
   QProcess(parent)
 {
-  /// todo: better error reporting
   connect(this, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(done(int, QProcess::ExitStatus)));
   connect(this, SIGNAL(readyReadStandardError()),            this, SLOT(reportError()));
   connect(this, SIGNAL(readyReadStandardOutput()),           this, SLOT(reportData()));
@@ -43,9 +42,7 @@ bool Exiv2Fetcher::fetchDateTime(const QString &imageFilename)
 // -- Slots -------------------------------------------------------------------
 void Exiv2Fetcher::reportError()
 {
-  QByteArray buffer = readAllStandardError();
-
-  QMessageBox::critical(0, "exiv2 fetch error", buffer);
+  emit failed(QString(readAllStandardError()));
 }
 
 void Exiv2Fetcher::reportData()

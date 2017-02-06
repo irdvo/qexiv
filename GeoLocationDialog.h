@@ -12,13 +12,14 @@ class QPushButton;
 class QFile;
 class QXmlStreamReader;
 class QDialogButtonBox;
+class QPlainTextEdit;
 
 class GeoLocationDialog : public QDialog
 {
   Q_OBJECT
 
 public:
-  GeoLocationDialog(const QVector<QString> &imageFilenames, QWidget *parent = 0);
+  GeoLocationDialog(const QVector<QString> &imageFilenames, QPlainTextEdit *messagesBox, QWidget *parent = 0);
   ~GeoLocationDialog();
 
 private slots:
@@ -50,6 +51,8 @@ private:
   QVector<QString>          &_imageFilenames;
   QVector<QString>
     ::const_iterator         _imageFilename;
+
+  QPlainTextEdit            *_messagesBox;
 
   QVector<TrkPt>             _points;
   int                        _imagesUpdated;

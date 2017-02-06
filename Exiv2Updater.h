@@ -23,6 +23,7 @@ private slots:
 
 signals:
   void updated();
+  void failed(const QString message);
 
 private:
   QString position2Degrees(double position);
