@@ -82,8 +82,6 @@ private:
   QModelIndex getFirstIndex();
   void deselectDirectorySelections();
 
-  static
-  QString shortFilename(const QString &filename);
 
   QMenu            *_fileMenu;
   QMenu            *_imageMenu;

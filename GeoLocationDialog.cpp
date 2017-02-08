@@ -6,7 +6,7 @@
 #endif
 
 #include "GeoLocationDialog.h"
-
+#include "util.h"
 
 GeoLocationDialog::GeoLocationDialog(const QVector<QString> &imageFilenames, QPlainTextEdit *messagesBox, QWidget *parent) :
   QDialog(parent),
@@ -126,8 +126,7 @@ void GeoLocationDialog::dateTimeFetched()
 
   if ((_imageDateTime.isValid()) && (lookupGPSLocation(latitude, longitude)))
   {
-    // ToDo: short filename
-    _messagesBox->appendPlainText(tr("%1: time %2 located on latitude:%3 and longitude:%4").arg(*_imageFilename).arg(_imageDateTime.toString("yyyy:MM:dd HH:mm:ss")).arg(latitude).arg(longitude));
+    _messagesBox->appendPlainText(tr("%1: time %2 located on latitude:%3 and longitude:%4").arg(shortFilename(*_imageFilename)).arg(_imageDateTime.toString("yyyy:MM:dd HH:mm:ss")).arg(latitude).arg(longitude));
 
     _exiv2Updater.updateGPSLocation(*_imageFilename, true, latitude, true, longitude);
     _imagesUpdated++;
@@ -136,11 +135,11 @@ void GeoLocationDialog::dateTimeFetched()
   {
     if (_imageDateTime.isValid())
     {
-      _messagesBox->appendPlainText(tr("%1: time %2 not located").arg(*_imageFilename).arg(_imageDateTime.toString("yyyy:MM:dd HH:mm:ss")));
+      _messagesBox->appendPlainText(tr("%1: time %2 not located").arg(shortFilename(*_imageFilename)).arg(_imageDateTime.toString("yyyy:MM:dd HH:mm:ss")));
     }
     else
     {
-      _messagesBox->appendPlainText(tr("%1: unknown time").arg(*_imageFilename));
+      _messagesBox->appendPlainText(tr("%1: unknown time").arg(shortFilename(*_imageFilename)));
     }
 
     doNextImage();

@@ -7,7 +7,7 @@
 
 #include "MainWindow.h"
 #include "GeoLocationDialog.h"
-
+#include "util.h"
 
 MainWindow::MainWindow(int argc, char *argv[]) :
   _imageFilename(""),
@@ -584,24 +584,6 @@ void MainWindow::updateLongitude()
   _exiv2Updater.updateGPSLocation(_imageFilename, false, 0.0, true, _longitudeEdit->text().toDouble());
 }
 
-QString MainWindow::shortFilename(const QString &filename)
-{
-  QString noPath;
-
-  for (QString::const_iterator ch = filename.begin(); ch != filename.end(); ++ch)
-  {
-    if ((*ch == '/') || (*ch == ':'))
-    {
-      noPath.clear();
-    }
-    else
-    {
-      noPath.append(*ch);
-    }
-  }
-
-  return noPath;
-}
 
 void MainWindow::exifFetched()
 {

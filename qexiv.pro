@@ -11,13 +11,15 @@ SOURCES  += main.cpp \
             ExivModel.cpp\
             Exiv2Fetcher.cpp\
             Exiv2Updater.cpp\
-            GeoLocationDialog.cpp
+            GeoLocationDialog.cpp\
+            util.cpp
 HEADERS  += MainWindow.h\
             Exiv2ModelFetcher.h \
             ExivModel.h\
             Exiv2Fetcher.h\
             Exiv2Updater.h\
-            GeoLocationDialog.h
+            GeoLocationDialog.h\
+            util.h
 RESOURCES = qexiv.qrc
 TARGET    = qexiv
 
