@@ -98,25 +98,41 @@ void Exiv2ModelFetcher::skipSpaces(const QByteArray &buffer, int &i)
 
 void Exiv2ModelFetcher::readTillSpace(const QByteArray &buffer, int &i, QString &result)
 {
-  result.clear();
+  int j = i;
 
   while ((i < buffer.length()) && (!isSpace(buffer.at(i))))
   {
-    result.append(buffer.at(i));
-
     i++;
+  }
+
+  if (i == j)
+  {
+    result.clear();
+  }
+  else
+  {
+    result = QString::fromUtf8(buffer.mid(j, i - j));
   }
 }
 
 void Exiv2ModelFetcher::readTillEOL(const QByteArray &buffer, int &i, QString &result)
 {
-  result.clear();
+  int j = i;
 
   while ((i < buffer.length()) && (buffer.at(i) != '\n') && (buffer.at(i) != '\r'))
   {
-    result.append(buffer.at(i));
-
     i++;
+  }
+
+  if (i == j)
+  {
+    result.clear();
+  }
+  else
+  {
+    result = QString::fromUtf8(buffer.mid(j, i - j));
+
+    result.trimmed();
   }
 
   if (buffer.at(i) == '\r')
@@ -128,8 +144,6 @@ void Exiv2ModelFetcher::readTillEOL(const QByteArray &buffer, int &i, QString &r
   {
     i++;
   }
-
-  result.trimmed();
 }
 
 void Exiv2ModelFetcher::done(int, ExitStatus)
