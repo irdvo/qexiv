@@ -7,13 +7,13 @@ A qt gui for:
   * Edit the image description
   * Edit the image latitude and longitude
 
-```
 Syntax:
+```
   qexiv [directory]
 ```
 
-```
 Example:
+```
   qexiv ~/photos
 ```
 
