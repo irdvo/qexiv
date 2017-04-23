@@ -1,5 +1,5 @@
 # qexiv
-Qt gui for:
+A qt gui for:
   * View images in a directory
   * View exif tags of an image
   * Geolocate images with a GPX file
@@ -7,15 +7,17 @@ Qt gui for:
   * Edit the image description
   * Edit the image latitude and longitude
 
+```
 Syntax:
   qexiv [directory]
+```
 
+```
 Example:
   qexiv ~/photos
+```
 
 Requirements:
-  [exiv2](http://exiv2.org)
-
-Enjoy.
+  * [exiv2](http://exiv2.org)
 
   
