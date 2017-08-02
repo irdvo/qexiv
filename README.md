@@ -19,5 +19,6 @@ Example:
 
 Requirements:
   * [exiv2](http://exiv2.org)
+  * browser
 
   

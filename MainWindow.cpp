@@ -231,7 +231,7 @@ void MainWindow::createToolBars()
 
 void MainWindow::createMetadataDock()
 {
-  QDockWidget *dock = new QDockWidget(tr("Metadata"), this);
+  QDockWidget *dock = new QDockWidget(tr("Image metadata"), this);
     dock->setObjectName("Metadata");
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
@@ -277,8 +277,8 @@ void MainWindow::createDirectoryDock()
 
 void MainWindow::createMessagesDock()
 {
-  _messagesDock = new QDockWidget(tr("Messages"), this);
-    _messagesDock->setObjectName("Messagess");
+  _messagesDock = new QDockWidget(tr("Exiv2 messages"), this);
+    _messagesDock->setObjectName("Messages");
     _messagesDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
     _messagesBox = new QPlainTextEdit(this);
