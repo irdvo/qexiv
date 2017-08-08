@@ -485,7 +485,7 @@ void MainWindow::setNormalSize()
   double factor = qMin((double) _imageScrollArea->size().width()  / (double) _image.size().width(),
                        (double) _imageScrollArea->size().height() / (double) _image.size().height());
 
-  scaleImage(factor * 0.95);
+  scaleImage(factor);
 }
 
 void MainWindow::setFullSize()

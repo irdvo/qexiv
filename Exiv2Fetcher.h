@@ -1,5 +1,5 @@
-#ifndef _EXIV2FETCHER_H
-#define _EXIV2FETCHER_H
+#ifndef EXIV2FETCHER_H
+#define EXIV2FETCHER_H
 
 #include <QProcess>
 

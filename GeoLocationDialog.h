@@ -1,5 +1,5 @@
-#ifndef _GEOLOCATIONDIALOG_H
-#define _GEOLOCATIONDIALOG_H
+#ifndef GEOLOCATIONDIALOG_H
+#define GEOLOCATIONDIALOG_H
 
 #include "Exiv2Fetcher.h"
 #include "Exiv2Updater.h"

@@ -1,5 +1,5 @@
-#ifndef _EXIVMODEL_H
-#define _EXIVMODEL_H
+#ifndef EXIVMODEL_H
+#define EXIVMODEL_H
 
 #include <QAbstractTableModel>
 #include <QVector>

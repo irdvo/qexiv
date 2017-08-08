@@ -4,7 +4,6 @@
 #else
 #include <QtGui>
 #endif
-#include <cmath>
 
 #include "Exiv2Fetcher.h"
 

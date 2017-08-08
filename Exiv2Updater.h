@@ -1,5 +1,5 @@
-#ifndef _EXIV2UPDATER_H
-#define _EXIV2UPDATER_H
+#ifndef EXIV2UPDATER_H
+#define EXIV2UPDATER_H
 
 #include <QProcess>
 
