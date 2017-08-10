@@ -7,6 +7,8 @@ equals(QT_MAJOR_VERSION,5) {
 }
 SOURCES  += main.cpp \
             MainWindow.cpp\
+            DescriptionGPSLocationTab.cpp\
+            FileView.cpp\
             Exiv2ModelFetcher.cpp \
             ExivModel.cpp\
             Exiv2Fetcher.cpp\
@@ -14,6 +16,8 @@ SOURCES  += main.cpp \
             GeoLocationDialog.cpp\
             util.cpp
 HEADERS  += MainWindow.h\
+            DescriptionGPSLocationTab.h\
+            FileView.h\
             Exiv2ModelFetcher.h \
             ExivModel.h\
             Exiv2Fetcher.h\

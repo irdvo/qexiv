@@ -17,12 +17,13 @@ class QScrollArea;
 class QFileDialog;
 class QScrollBar;
 class QTableView;
-class QListView;
+class FileView;
 class QFileSystemModel;
 class QDockWidget;
 class QPushButton;
 class QLineEdit;
 class QPlainTextEdit;
+class DescriptionGPSLocationTab;
 
 class MainWindow : public QMainWindow
 {
@@ -46,16 +47,17 @@ private slots:
   void setFullSize();
   void fitToWindow();
   void showMap();
-  void selectInDirectory(const QModelIndex &);
-  void updateDescription();
-  void updateLatitude();
-  void updateLongitude();
+  void updateDescription(const QString &);
+  void updateLatitude(double);
+  void updateLongitude(double);
   void imageUpdated();
   void exifFetched();
   void directoryLoaded(const QString &);
-  void selectFirstImage();
-  void selectPrevImage();
-  void selectNextImage();
+  void rootPathChanged(const QString &);
+  void indexSelected(const QModelIndex &);
+  void indexActivated(const QModelIndex &);
+  void moveToPrevImage();
+  void moveToNextImage();
 
 private:
   void createCentralWidget();
@@ -71,15 +73,19 @@ private:
 
   void adjustScrollBar(QScrollBar *scrollBar, double factor);
 
-  void openImage(const QString &filename);
-
-  void setImage(const QImage &image);
+  void setImage(const QString &filename);
+  void clearImage();
+  bool openImage(const QString &filename, QLabel *label, QSize &size);
   void scaleImage(double factor);
 
   void restoreSettings();
   void saveSettings();
 
+  void moveToFirstImage();
+  void moveToCurrentImage();
   QModelIndex getFirstIndex();
+  void moveToIndex(const QModelIndex &);
+
   void deselectDirectorySelections();
 
 
@@ -112,7 +118,7 @@ private:
 
   // Directory dock
   QDockWidget      *_directoryDock;
-  QListView        *_directoryView;
+  FileView         *_directoryView;
   QFileSystemModel *_fileSystemModel;
 
   // Message dock
@@ -120,20 +126,15 @@ private:
   QPlainTextEdit   *_messagesBox;
 
   // Description dock
-  QLineEdit        *_imageDescription;
-  QPushButton      *_setButton;
-  QPushButton      *_nextButton;
-  QLineEdit        *_latitudeEdit;
-  QPushButton      *_latitudeButton;
-  QLineEdit        *_longitudeEdit;
-  QPushButton      *_longitudeButton;
+  QTabWidget       *_actionTab;
+  DescriptionGPSLocationTab *_descriptionGPSLocationTab;
 
   // Image
   QLabel           *_imageLabel;
   QScrollArea      *_imageScrollArea;
   QString           _imageFilename;
   QString           _imagePath;
-  QImage            _image;
+  QSize             _imageSize;
   double            _scaleFactor;
 
   // Exiv2

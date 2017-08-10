@@ -6,8 +6,10 @@
 #endif
 
 #include "MainWindow.h"
+#include "FileView.h"
 #include "GeoLocationDialog.h"
 #include "util.h"
+#include "DescriptionGPSLocationTab.h"
 
 MainWindow::MainWindow(int argc, char *argv[]) :
   _imageFilename(""),
@@ -66,46 +68,20 @@ void MainWindow::createCentralWidget()
       _imageScrollArea->setVisible(true);
       _imageScrollArea->setAlignment(Qt::AlignCenter);
 
-    vbox->addWidget(_imageScrollArea);
+    vbox->addWidget(_imageScrollArea, 1);
 
-      QGridLayout *grid = new QGridLayout;
+    _actionTab = new QTabWidget;
 
-      grid->addWidget(new QLabel(tr("Image Description:")), 0, 0);
+      _descriptionGPSLocationTab = new DescriptionGPSLocationTab();
 
-      _imageDescription = new QLineEdit;
-      connect(_imageDescription, SIGNAL(returnPressed()), this, SLOT(updateDescription()));
-      grid->addWidget(_imageDescription, 0, 1);
+      connect(_descriptionGPSLocationTab, SIGNAL(descriptionUpdated(const QString &)), this, SLOT(updateDescription(const QString &)));
+      connect(_descriptionGPSLocationTab, SIGNAL(latitudeUpdated(double)),             this, SLOT(updateLatitude(double)));
+      connect(_descriptionGPSLocationTab, SIGNAL(longitudeUpdated(double)),            this, SLOT(updateLongitude(double)));
+      connect(_descriptionGPSLocationTab, SIGNAL(nextImageSelected()),                 this, SLOT(moveToNextImage()));
 
-      _setButton = new QPushButton(tr("Set"));
-      connect(_setButton, SIGNAL(clicked()), this, SLOT(updateDescription()));
-      grid->addWidget(_setButton, 0, 2);
+      _actionTab->addTab(_descriptionGPSLocationTab, tr("Description && GPS Location"));
 
-      _nextButton = new QPushButton(tr(">>"));
-      connect(_nextButton, SIGNAL(clicked()), this, SLOT(selectNextImage()));
-      grid->addWidget(_nextButton, 0, 3);
-
-      grid->addWidget(new QLabel(tr("Latitude:")), 1, 0);
-
-      _latitudeEdit = new QLineEdit;
-      connect(_latitudeEdit, SIGNAL(returnPressed()), this, SLOT(updateLatitude()));
-      grid->addWidget(_latitudeEdit, 1, 1);
-
-      _latitudeButton = new QPushButton(tr("Set"));
-      connect(_latitudeButton, SIGNAL(clicked()), this, SLOT(updateLatitude()));
-      grid->addWidget(_latitudeButton, 1, 2);
-
-      grid->addWidget(new QLabel(tr("Longitude:")), 2, 0);
-
-      _longitudeEdit = new QLineEdit;
-      connect(_longitudeEdit, SIGNAL(returnPressed()), this, SLOT(updateLongitude()));
-      grid->addWidget(_longitudeEdit, 2, 1);
-
-      _longitudeButton = new QPushButton(tr("Set"));
-      connect(_longitudeButton, SIGNAL(clicked()), this, SLOT(updateLongitude()));
-      grid->addWidget(_longitudeButton, 2, 2);
-
-
-    vbox->addLayout(grid);
+    vbox->addWidget(_actionTab);
 
   QWidget *widget = new QWidget(this);
   widget->setLayout(vbox);
@@ -167,11 +143,11 @@ void MainWindow::createActions()
 
   QIcon prevImageIcon = style->standardIcon(QStyle::SP_ArrowBack);
   _prevImageAction = new QAction(prevImageIcon, tr("Show prevous image"), this);
-  connect(_prevImageAction, SIGNAL(triggered()), this, SLOT(selectPrevImage()));
+  connect(_prevImageAction, SIGNAL(triggered()), this, SLOT(moveToPrevImage()));
 
   QIcon nextImageIcon = style->standardIcon(QStyle::SP_ArrowForward);
   _nextImageAction = new QAction(nextImageIcon, tr("Show next image"), this);
-  connect(_nextImageAction, SIGNAL(triggered()), this, SLOT(selectNextImage()));
+  connect(_nextImageAction, SIGNAL(triggered()), this, SLOT(moveToNextImage()));
 
   QIcon showLocateIcon = QIcon(":/icons/locate.png");
   _geoLocateAction = new QAction(showLocateIcon, tr("Geo&Locate images..."), this);
@@ -263,12 +239,25 @@ void MainWindow::createDirectoryDock()
      _fileSystemModel->setNameFilters(fileSystemFilters);
      _fileSystemModel->setNameFilterDisables(false);
      _fileSystemModel->setRootPath(_imagePath);
-     connect(_fileSystemModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(directoryLoaded(const QString&)));
 
-     _directoryView = new QListView(_directoryDock);
-    _directoryView->setModel(_fileSystemModel);
-    _directoryView->setRootIndex(_fileSystemModel->index(_imagePath));
-    connect(_directoryView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(selectInDirectory(const QModelIndex&)));
+#if QT_VERSION >= 0x050000
+     connect(_fileSystemModel, &QFileSystemModel::directoryLoaded, this, &MainWindow::directoryLoaded);
+     connect(_fileSystemModel, &QFileSystemModel::rootPathChanged, this, &MainWindow::rootPathChanged);
+#else
+     connect(_fileSystemModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(directoryLoaded(const QString&)));
+     connect(_fileSystemModel, SIGNAL(rootPathChanged(const QString&)), this, SLOT(rootPathChanged(const QString&)));
+#endif
+
+     _directoryView = new FileView(_directoryDock);
+     _directoryView->setModel(_fileSystemModel);
+     _directoryView->setRootIndex(_fileSystemModel->index(_imagePath));
+#if QT_VERSION >= 0x050000
+     connect(_directoryView, &QListView::activated,    this, &MainWindow::indexActivated);
+     connect(_directoryView, &FileView::indexSelected, this, &MainWindow::indexSelected);
+#else
+     connect(_directoryView, SIGNAL(activated(const QModelIndex&)),     this, SLOT(indexActivated(const QModelIndex&)));
+     connect(_directoryView, SIGNAL(indexSelected(const QModelIndex&)), this, SLOT(indexSelected(const QModelIndex&)));
+#endif
 
     _directoryDock->setWidget(_directoryView);
     addDockWidget(Qt::LeftDockWidgetArea, _directoryDock);;
@@ -295,12 +284,16 @@ void MainWindow::createMessagesDock()
 
 void MainWindow::updateActions()
 {
-  _zoomInAction       ->setEnabled(!_fitToWindowAction->isChecked());
-  _zoomOutAction      ->setEnabled(!_fitToWindowAction->isChecked());
-  _setNormalSizeAction->setEnabled(!_fitToWindowAction->isChecked());
-  _setFullSizeAction  ->setEnabled(!_fitToWindowAction->isChecked());
-  _showMapAction      ->setEnabled(!_imageFilename.isEmpty());
-  _setButton          ->setEnabled(!_imageFilename.isEmpty());
+  bool hasFile = !_imageFilename.isEmpty();
+  bool canZoom = hasFile && !_fitToWindowAction->isChecked();
+
+  _fitToWindowAction        ->setEnabled(hasFile);
+  _zoomInAction             ->setEnabled(canZoom);
+  _zoomOutAction            ->setEnabled(canZoom);
+  _setNormalSizeAction      ->setEnabled(canZoom);
+  _setFullSizeAction        ->setEnabled(canZoom);
+  _showMapAction            ->setEnabled(hasFile);
+  _descriptionGPSLocationTab->setEnabled(hasFile);
 }
 
 void MainWindow::setTitle()
@@ -316,7 +309,44 @@ void MainWindow::setTitle()
 }
 
 // == Image ===================================================================
-void MainWindow::openImage(const QString &filename)
+
+void MainWindow::setImage(const QString &filename)
+{
+  if (openImage(filename, _imageLabel, _imageSize))
+  {
+    _imageFilename = filename;
+
+    _scaleFactor = 1.0;
+
+    if (!_fitToWindowAction->isChecked())
+    {
+      setNormalSize();
+    }
+
+    _exiv2ModelFetcher.fetch(_imageFilename);
+  }
+  else
+  {
+    _imageFilename.clear();
+  }
+
+  setTitle();
+
+  updateActions();
+}
+
+void MainWindow::clearImage()
+{
+  _imageLabel->setPixmap(QPixmap());
+
+  _imageFilename.clear();
+
+  setTitle();
+
+  updateActions();
+}
+
+bool MainWindow::openImage(const QString &filename, QLabel *label, QSize &size)
 {
   QImageReader reader(filename);
 
@@ -328,38 +358,19 @@ void MainWindow::openImage(const QString &filename)
 
   if (image.isNull())
   {
-    QMessageBox::information(this,
-                             tr("Error: unable to load image"),
-                             tr("Unable to load the image %1: %2").arg(QDir::toNativeSeparators(filename), reader.errorString()));
+    QMessageBox::warning(
+          this,
+          tr("Error: unable to load image"),
+          tr("Unable to load the image %1: %2").arg(QDir::toNativeSeparators(filename), reader.errorString()));
   }
   else
   {
-    _imageFilename = filename;
+    size = image.size();
 
-    setTitle();
-
-    _exiv2ModelFetcher.fetch(_imageFilename);
-
-    setImage(image);
+    label->setPixmap(QPixmap::fromImage(image));
   }
-}
 
-void MainWindow::setImage(const QImage &image)
-{
-  _image = image;
-
-  _imageLabel->setPixmap(QPixmap::fromImage(_image));
-
-  _scaleFactor = 1.0;
-
-  _fitToWindowAction->setEnabled(true);
-
-  updateActions();
-
-  if (!_fitToWindowAction->isChecked())
-  {
-    setNormalSize();
-  }
+  return (!image.isNull());
 }
 
 void MainWindow::scaleImage(double factor)
@@ -408,10 +419,6 @@ void MainWindow::openDirectory()
 
     _imagePath = directoryDialog.selectedFiles().first();
 
-    _directoryDock->setWindowTitle(_imagePath);
-
-    _fileSystemModel->setRootPath(_imagePath);
-
     _directoryView->setRootIndex(_fileSystemModel->setRootPath(_imagePath));
   }
 
@@ -430,9 +437,7 @@ void MainWindow::parentDirectory()
 
     _imagePath = directory.absolutePath();
 
-    _directoryDock->setWindowTitle(tr("Images: %1").arg(_imagePath));
-
-    _fileSystemModel->setRootPath(_imagePath);
+    clearImage();
 
     _directoryView->setRootIndex(_fileSystemModel->setRootPath(_imagePath));
   }
@@ -482,8 +487,8 @@ void MainWindow::setNormalSize()
   _scaleFactor = 1.0;
 
   // Scale the image to fit on screen
-  double factor = qMin((double) _imageScrollArea->size().width()  / (double) _image.size().width(),
-                       (double) _imageScrollArea->size().height() / (double) _image.size().height());
+  double factor = qMin((double) _imageScrollArea->size().width()  / (double) _imageSize.width(),
+                       (double) _imageScrollArea->size().height() / (double) _imageSize.height());
 
   scaleImage(factor);
 }
@@ -537,10 +542,31 @@ void MainWindow::showMap()
 
 void MainWindow::directoryLoaded(const QString &)
 {
-  selectFirstImage();
+#if 1
+  // Strange qt bug: directoryLoaded event is too early -> indices are not yet correct
+  QTime waitTime = QTime::currentTime().addMSecs( 200 );
+  while (QTime::currentTime() < waitTime)
+  {
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+  }
+#endif
+
+  if (_imageFilename.isEmpty())
+  {
+    moveToFirstImage();
+  }
+  else
+  {
+    moveToCurrentImage();
+  }
 }
 
-void MainWindow::selectInDirectory(const QModelIndex &index)
+void MainWindow::rootPathChanged(const QString &path)
+{
+  _directoryDock->setWindowTitle(tr("Images: %1").arg(path));
+}
+
+void MainWindow::moveToIndex(const QModelIndex &index)
 {
   if (index != QModelIndex())
   {
@@ -550,47 +576,83 @@ void MainWindow::selectInDirectory(const QModelIndex &index)
 
     if (_fileSystemModel->fileInfo(index).isDir())
     {
-      _directoryDock->setWindowTitle(filename);
-
-      _fileSystemModel->setRootPath(filename);
+      clearImage();
 
       _directoryView->setRootIndex(_fileSystemModel->setRootPath(filename));
     }
     else
     {
-      // QMessageBox::warning(0, tr("selectFirstImage"), tr("Selection %1").arg(_fileSystemModel->fileInfo(index).absoluteFilePath()));
-
       _directoryView->selectionModel()->select(index, QItemSelectionModel::Select);
       _directoryView->scrollTo(index);
 
-      openImage(filename);
+      setImage(filename);
     }
   }
 }
 
-void MainWindow::updateDescription()
+void MainWindow::indexActivated(const QModelIndex &index)
+{
+  if (index != QModelIndex())
+  {
+    QString filename = _fileSystemModel->fileInfo(index).absoluteFilePath();
+
+    if (_fileSystemModel->fileInfo(index).isDir())
+    {
+      clearImage();
+
+      _directoryView->setRootIndex(_fileSystemModel->setRootPath(filename));
+    }
+    else if (filename != _imageFilename)
+    {
+      setImage(filename);
+    }
+  }
+}
+
+void MainWindow::indexSelected(const QModelIndex &index)
+{
+  if (index != QModelIndex())
+  {
+    QString filename = _fileSystemModel->fileInfo(index).absoluteFilePath();
+
+    if (_fileSystemModel->fileInfo(index).isDir())
+    {
+      clearImage();
+    }
+    else if (filename != _imageFilename)
+    {
+      setImage(filename);
+    }
+  }
+}
+
+void MainWindow::updateDescription(const QString &text)
 {
   // User requested an update of the description of the current image
-  _exiv2Updater.update(_imageFilename,  _imageDescription->text());
+  _exiv2Updater.update(_imageFilename,  text);
 }
 
-void MainWindow::updateLatitude()
+void MainWindow::updateLatitude(double latitude)
 {
-  _exiv2Updater.updateGPSLocation(_imageFilename, true, _latitudeEdit->text().toDouble(), false, 0.0);
+  _exiv2Updater.updateGPSLocation(_imageFilename, true, latitude, false, 0.0);
 }
 
-void MainWindow::updateLongitude()
+void MainWindow::updateLongitude(double longitude)
 {
-  _exiv2Updater.updateGPSLocation(_imageFilename, false, 0.0, true, _longitudeEdit->text().toDouble());
+  _exiv2Updater.updateGPSLocation(_imageFilename, false, 0.0, true, longitude);
 }
-
 
 void MainWindow::exifFetched()
 {
   // Exif data of image is fetched
+
+  QString descriptionText;
+  QString latitudeText;
+  QString longitudeText;
+
   if (_exiv2ModelFetcher.exivModel().length() > 0)
   {
-    _imageDescription->setText(_exiv2ModelFetcher.exivModel().getImageDescription());
+    descriptionText = _exiv2ModelFetcher.exivModel().getImageDescription();
 
     double latitude;
     double longitude;
@@ -599,13 +661,8 @@ void MainWindow::exifFetched()
     {
       _exiv2ModelFetcher.exivModel().getGPSRef(latitude, longitude);
 
-      _latitudeEdit ->setText(tr("%1").arg(latitude));
-      _longitudeEdit->setText(tr("%1").arg(longitude));
-    }
-    else
-    {
-      _latitudeEdit->setText("");
-      _longitudeEdit->setText("");
+      latitudeText = tr("%1").arg(latitude);
+      longitudeText = tr("%1").arg(longitude);
     }
 
     _messagesBox->appendPlainText(tr("%1: Exif metadata fetched").arg(shortFilename(_imageFilename)));
@@ -614,12 +671,39 @@ void MainWindow::exifFetched()
   {
     _messagesBox->appendPlainText(tr("%1: No exif metadata present in this image").arg(shortFilename(_imageFilename)));
   }
+
+  _descriptionGPSLocationTab->set(descriptionText, latitudeText, longitudeText);
 }
 
 void MainWindow::imageUpdated()
 {
   // Image description is updated, refetch the exif info
   _exiv2ModelFetcher.fetch(_imageFilename);
+}
+
+void MainWindow::moveToCurrentImage()
+{
+  int col = _directoryView->modelColumn();
+  int row = 0;
+
+  QModelIndex root = _directoryView->rootIndex();
+
+  QModelIndex sibling = root.child(row, col);
+
+  while (sibling != QModelIndex() && _fileSystemModel->fileInfo(sibling).absoluteFilePath() != _imageFilename)
+  {
+    sibling = sibling.sibling(++row, col);
+  }
+
+  if (sibling != QModelIndex())
+  {
+    _directoryView->selectionModel()->select(sibling, QItemSelectionModel::Select);
+    _directoryView->scrollTo(sibling);
+  }
+  else
+  {
+    moveToFirstImage();
+  }
 }
 
 QModelIndex MainWindow::getFirstIndex()
@@ -639,19 +723,12 @@ QModelIndex MainWindow::getFirstIndex()
   return sibling;
 }
 
-void MainWindow::selectFirstImage()
+void MainWindow::moveToFirstImage()
 {
-  // Strange qt bug: directoryLoaded event is too early -> indices are not yet correct
-  QTime waitTime = QTime::currentTime().addMSecs( 500 );
-  while (QTime::currentTime() < waitTime)
-  {
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-  }
-
-  selectInDirectory(getFirstIndex());
+  moveToIndex(getFirstIndex());
 }
 
-void MainWindow::selectPrevImage()
+void MainWindow::moveToPrevImage()
 {
   QModelIndexList selectedIndexes =  _directoryView->selectionModel()->selectedIndexes();
 
@@ -670,7 +747,7 @@ void MainWindow::selectPrevImage()
     }
     while ((sibling != QModelIndex()) && (_fileSystemModel->isDir(sibling)));
 
-    selectInDirectory(sibling);
+    moveToIndex(sibling);
   }
   else
   {
@@ -678,7 +755,7 @@ void MainWindow::selectPrevImage()
   }
 }
 
-void MainWindow::selectNextImage()
+void MainWindow::moveToNextImage()
 {
   QModelIndexList selectedIndexes =  _directoryView->selectionModel()->selectedIndexes();
 
@@ -697,7 +774,7 @@ void MainWindow::selectNextImage()
     }
     while ((sibling != QModelIndex()) && (_fileSystemModel->isDir(sibling)));
 
-    selectInDirectory(sibling);
+    moveToIndex(sibling);
   }
   else
   {
