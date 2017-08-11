@@ -16,6 +16,8 @@ public:
 
   bool updateGPSLocation (const QString &imageFilename, bool doLatitude, double latitude, bool doLongitude, double longitude);
 
+  bool updateOwner(const QString &imageFilename, const QString &artist, const QString &copyright, const QString &rating, const QString &processingSoftware);
+
 private slots:
   void reportError();
   void reportData();

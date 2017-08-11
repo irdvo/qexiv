@@ -10,6 +10,7 @@
 #include "GeoLocationDialog.h"
 #include "util.h"
 #include "DescriptionGPSLocationTab.h"
+#include "OwnerTab.h"
 
 MainWindow::MainWindow(int argc, char *argv[]) :
   _imageFilename(""),
@@ -72,14 +73,18 @@ void MainWindow::createCentralWidget()
 
     _actionTab = new QTabWidget;
 
-      _descriptionGPSLocationTab = new DescriptionGPSLocationTab();
-
-      connect(_descriptionGPSLocationTab, SIGNAL(descriptionUpdated(const QString &)), this, SLOT(updateDescription(const QString &)));
-      connect(_descriptionGPSLocationTab, SIGNAL(latitudeUpdated(double)),             this, SLOT(updateLatitude(double)));
-      connect(_descriptionGPSLocationTab, SIGNAL(longitudeUpdated(double)),            this, SLOT(updateLongitude(double)));
-      connect(_descriptionGPSLocationTab, SIGNAL(nextImageSelected()),                 this, SLOT(moveToNextImage()));
-
+      _descriptionGPSLocationTab = new DescriptionGPSLocationTab;
+        connect(_descriptionGPSLocationTab, SIGNAL(descriptionUpdated(const QString &)), this, SLOT(updateDescription(const QString &)));
+        connect(_descriptionGPSLocationTab, SIGNAL(latitudeUpdated(double)),             this, SLOT(updateLatitude(double)));
+        connect(_descriptionGPSLocationTab, SIGNAL(longitudeUpdated(double)),            this, SLOT(updateLongitude(double)));
+        connect(_descriptionGPSLocationTab, SIGNAL(nextImageSelected()),                 this, SLOT(moveToNextImage()));
       _actionTab->addTab(_descriptionGPSLocationTab, tr("Description && GPS Location"));
+
+      _ownerTab = new OwnerTab;
+        connect(_ownerTab, SIGNAL(updated    (const QString &, const QString &, const QString &, const QString &)),
+                this,      SLOT  (updateOwner(const QString &, const QString &, const QString &, const QString &)));
+        connect(_ownerTab, SIGNAL(nextImageSelected()),                 this, SLOT(moveToNextImage()));
+      _actionTab->addTab(_ownerTab, tr("Owner"));
 
     vbox->addWidget(_actionTab);
 
@@ -293,6 +298,7 @@ void MainWindow::updateActions()
   _setNormalSizeAction      ->setEnabled(canZoom);
   _setFullSizeAction        ->setEnabled(canZoom);
   _showMapAction            ->setEnabled(hasFile);
+  _exifView                 ->setEnabled(hasFile);
   _descriptionGPSLocationTab->setEnabled(hasFile);
 }
 
@@ -642,6 +648,11 @@ void MainWindow::updateLongitude(double longitude)
   _exiv2Updater.updateGPSLocation(_imageFilename, false, 0.0, true, longitude);
 }
 
+void MainWindow::updateOwner(const QString &artist, const QString &copyright, const QString &rating, const QString &processingSoftware)
+{
+  _exiv2Updater.updateOwner(_imageFilename, artist, copyright, rating, processingSoftware);
+}
+
 void MainWindow::exifFetched()
 {
   // Exif data of image is fetched
@@ -650,9 +661,19 @@ void MainWindow::exifFetched()
   QString latitudeText;
   QString longitudeText;
 
+  QString artist;
+  QString copyright;
+  QString rating;
+  QString processingSoftware;
+
   if (_exiv2ModelFetcher.exivModel().length() > 0)
   {
-    descriptionText = _exiv2ModelFetcher.exivModel().getImageDescription();
+    descriptionText    = _exiv2ModelFetcher.exivModel().getTagValue("ImageDescription");
+
+    artist             = _exiv2ModelFetcher.exivModel().getTagValue("Exif.Image.Artist");
+    copyright          = _exiv2ModelFetcher.exivModel().getTagValue("Exif.Image.Copyright");
+    rating             = _exiv2ModelFetcher.exivModel().getTagValue("Exif.Image.Rating");
+    processingSoftware = _exiv2ModelFetcher.exivModel().getTagValue("Exif.Image.ProcessingSoftware");
 
     double latitude;
     double longitude;
@@ -673,6 +694,8 @@ void MainWindow::exifFetched()
   }
 
   _descriptionGPSLocationTab->set(descriptionText, latitudeText, longitudeText);
+
+  _ownerTab->set(artist, copyright, rating, processingSoftware);
 }
 
 void MainWindow::imageUpdated()

@@ -149,11 +149,11 @@ void ExivModel::getGPSRef(double &latitude, double &longitude)
   }
 }
 
-QString ExivModel::getImageDescription()
+QString ExivModel::getTagValue(const QString &tag)
 {
   for (ExivItems::iterator item = _exivItems.begin(); item != _exivItems.end(); ++item)
   {
-    if (item->_key.endsWith("ImageDescription", Qt::CaseInsensitive))
+    if (item->_key.endsWith(tag, Qt::CaseInsensitive))
     {
       return item->_value;
     }

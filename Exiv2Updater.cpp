@@ -96,6 +96,35 @@ bool Exiv2Updater::updateGPSLocation(const QString &imageFilename, bool doLatitu
   return true;
 }
 
+// -- Update the owner info in the image
+bool Exiv2Updater::updateOwner(const QString &imageFilename, const QString &artist, const QString &copyright, const QString &rating, const QString &processingSoftware)
+{
+  if (state() != QProcess::NotRunning)
+  {
+    return false;
+  }
+
+  QStringList parameters;
+
+  parameters << "modify";
+
+  parameters << "-M" << QString("set Exif.Image.Artist %1").arg(artist);
+
+  parameters << "-M" << QString("set Exif.Image.Copyright %1").arg(copyright);
+
+  parameters << "-M" << QString("set Exif.Image.Rating %1").arg(rating);
+
+  parameters << "-M" << QString("set Exif.Image.ProcessingSoftware %1").arg(processingSoftware);
+
+  parameters << imageFilename;
+
+  //QMessageBox::information(0, "Update", parameters.join(" "));
+
+  start("exiv2", parameters);
+
+  return true;
+}
+
 // -- Slots -------------------------------------------------------------------
 void Exiv2Updater::reportError()
 {

@@ -130,9 +130,7 @@ void Exiv2ModelFetcher::readTillEOL(const QByteArray &buffer, int &i, QString &r
   }
   else
   {
-    result = QString::fromUtf8(buffer.mid(j, i - j));
-
-    result.trimmed();
+    result = QString::fromUtf8(buffer.mid(j, i - j)).trimmed();
   }
 
   if (buffer.at(i) == '\r')

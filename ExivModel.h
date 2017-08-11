@@ -31,7 +31,7 @@ public:
 
   void getGPSRef(double &latitude, double &longitude);
 
-  QString getImageDescription();
+  QString getTagValue(const QString &tag);
 
 private:
 

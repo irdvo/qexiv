@@ -24,6 +24,7 @@ class QPushButton;
 class QLineEdit;
 class QPlainTextEdit;
 class DescriptionGPSLocationTab;
+class OwnerTab;
 
 class MainWindow : public QMainWindow
 {
@@ -50,6 +51,7 @@ private slots:
   void updateDescription(const QString &);
   void updateLatitude(double);
   void updateLongitude(double);
+  void updateOwner(const QString &, const QString &, const QString &, const QString &);
   void imageUpdated();
   void exifFetched();
   void directoryLoaded(const QString &);
@@ -128,6 +130,7 @@ private:
   // Description dock
   QTabWidget       *_actionTab;
   DescriptionGPSLocationTab *_descriptionGPSLocationTab;
+  OwnerTab                  *_ownerTab;
 
   // Image
   QLabel           *_imageLabel;

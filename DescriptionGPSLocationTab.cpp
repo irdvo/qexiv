@@ -2,6 +2,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QDoubleValidator>
 
 #include "DescriptionGPSLocationTab.h"
 
@@ -14,35 +15,37 @@ DescriptionGPSLocationTab::DescriptionGPSLocationTab(QWidget *parent) :
   grid->addWidget(new QLabel(tr("Image Description:")), 0, 0);
 
   _imageDescription = new QLineEdit;
-  connect(_imageDescription, SIGNAL(returnPressed()), this, SLOT(setClicked()));
+    connect(_imageDescription, SIGNAL(returnPressed()), this, SLOT(setClicked()));
   grid->addWidget(_imageDescription, 0, 1);
 
   _setButton = new QPushButton(tr("Set"));
-  connect(_setButton, SIGNAL(clicked()), this, SLOT(setClicked()));
+    connect(_setButton, SIGNAL(clicked()), this, SLOT(setClicked()));
   grid->addWidget(_setButton, 0, 2);
 
   _nextButton = new QPushButton(tr(">>"));
-  connect(_nextButton, SIGNAL(clicked()), this, SLOT(nextClicked()));
+    connect(_nextButton, SIGNAL(clicked()), this, SLOT(nextClicked()));
   grid->addWidget(_nextButton, 0, 3);
 
   grid->addWidget(new QLabel(tr("Latitude:")), 1, 0);
 
   _latitudeEdit = new QLineEdit;
-  connect(_latitudeEdit, SIGNAL(returnPressed()), this, SLOT(latitudeSet()));
+    _latitudeEdit->setValidator(new QDoubleValidator(-90.0, 90.0, 5, this));
+    connect(_latitudeEdit, SIGNAL(returnPressed()), this, SLOT(latitudeSet()));
   grid->addWidget(_latitudeEdit, 1, 1);
 
   _latitudeButton = new QPushButton(tr("Set"));
-  connect(_latitudeButton, SIGNAL(clicked()), this, SLOT(latitudeSet()));
+    connect(_latitudeButton, SIGNAL(clicked()), this, SLOT(latitudeSet()));
   grid->addWidget(_latitudeButton, 1, 2);
 
   grid->addWidget(new QLabel(tr("Longitude:")), 2, 0);
 
   _longitudeEdit = new QLineEdit;
-  connect(_longitudeEdit, SIGNAL(returnPressed()), this, SLOT(longitudeSet()));
+    _longitudeEdit->setValidator(new QDoubleValidator(-180.0, 180.0, 5, this));
+    connect(_longitudeEdit, SIGNAL(returnPressed()), this, SLOT(longitudeSet()));
   grid->addWidget(_longitudeEdit, 2, 1);
 
   _longitudeButton = new QPushButton(tr("Set"));
-  connect(_longitudeButton, SIGNAL(clicked()), this, SLOT(longitudeSet()));
+    connect(_longitudeButton, SIGNAL(clicked()), this, SLOT(longitudeSet()));
   grid->addWidget(_longitudeButton, 2, 2);
 
   setLayout(grid);
@@ -76,10 +79,6 @@ void DescriptionGPSLocationTab::latitudeSet()
   {
     emit latitudeUpdated(value);
   }
-  else
-  {
-    /// TODO error message
-  }
 }
 
 void DescriptionGPSLocationTab::longitudeSet()
@@ -91,9 +90,5 @@ void DescriptionGPSLocationTab::longitudeSet()
   if (ok)
   {
     emit longitudeUpdated(value);
-  }
-  else
-  {
-    /// TODO error message
   }
 }
