@@ -1,6 +1,7 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QComboBox>
 #include <QPushButton>
 #include <QDoubleValidator>
 
@@ -14,8 +15,10 @@ DescriptionGPSLocationTab::DescriptionGPSLocationTab(QWidget *parent) :
 
   grid->addWidget(new QLabel(tr("Image Description:")), 0, 0);
 
-  _imageDescription = new QLineEdit;
-    connect(_imageDescription, SIGNAL(returnPressed()), this, SLOT(setClicked()));
+  _imageDescription = new QComboBox;
+  _imageDescription->setEditable(true);
+  _imageDescription->setInsertPolicy(QComboBox::InsertAtTop);
+  connect(_imageDescription, SIGNAL(activated(const QString &)), this, SLOT(setClicked(const QString &)));
   grid->addWidget(_imageDescription, 0, 1);
 
   _setButton = new QPushButton(tr("Set"));
@@ -53,15 +56,32 @@ DescriptionGPSLocationTab::DescriptionGPSLocationTab(QWidget *parent) :
 
 void DescriptionGPSLocationTab::set(const QString &description, const QString &latitude, const QString &longitude)
 {
-  _imageDescription->setText(description);
+  if (description == "")
+  {
+    _imageDescription->clearEditText();
+  }
+  else
+  {
+    _imageDescription->setEditText(description);
+  }
 
   _latitudeEdit ->setText(latitude);
   _longitudeEdit->setText(longitude);
 }
 
+void DescriptionGPSLocationTab::setClicked(const QString &text)
+{
+  if (_imageDescription->findText(text, Qt::MatchFixedString|Qt::MatchCaseSensitive) == -1)
+  {
+    _imageDescription->addItem(text);
+  }
+
+  emit descriptionUpdated(text);
+}
+
 void DescriptionGPSLocationTab::setClicked()
 {
-  emit descriptionUpdated(_imageDescription->text());
+  setClicked(_imageDescription->currentText());
 }
 
 void DescriptionGPSLocationTab::nextClicked()

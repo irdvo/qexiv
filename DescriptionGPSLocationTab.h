@@ -5,13 +5,14 @@
 
 class QLineEdit;
 class QPushButton;
+class QComboBox;
 
 class DescriptionGPSLocationTab : public QWidget
 {
   Q_OBJECT
 
 public:
-  DescriptionGPSLocationTab(QWidget *parent = 0);
+  DescriptionGPSLocationTab(QWidget *parent = nullptr);
   
   void set(const QString &description, const QString &latitude, const QString &longitude);
 
@@ -23,12 +24,13 @@ signals:
 
 private slots:
   void setClicked();
+  void setClicked(const QString &);
   void latitudeSet();
   void longitudeSet();
   void nextClicked();
 
 private:
-  QLineEdit        *_imageDescription;
+  QComboBox        *_imageDescription;
   QPushButton      *_setButton;
   QPushButton      *_nextButton;
   QLineEdit        *_latitudeEdit;

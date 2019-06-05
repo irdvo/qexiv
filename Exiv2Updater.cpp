@@ -32,7 +32,7 @@ bool Exiv2Updater::update(const QString &imageFilename, const QString &imageDesc
 
   QStringList parameters;
 
-  parameters << "modify" << "-M" << QString("set Exif.Image.ImageDescription %1").arg(imageDescription) << imageFilename;
+  parameters << "-M" << QString("set Exif.Image.ImageDescription %1").arg(imageDescription) << imageFilename;
 
   start("exiv2", parameters);
 
@@ -69,8 +69,6 @@ bool Exiv2Updater::updateGPSLocation(const QString &imageFilename, bool doLatitu
 
   QStringList parameters;
 
-  parameters << "modify";
-
   if (doLatitude)
   {
     QString GPSRef = (latitude < 0 ? "S" : "N");
@@ -105,8 +103,6 @@ bool Exiv2Updater::updateOwner(const QString &imageFilename, const QString &arti
   }
 
   QStringList parameters;
-
-  parameters << "modify";
 
   parameters << "-M" << QString("set Exif.Image.Artist %1").arg(artist);
 

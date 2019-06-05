@@ -31,7 +31,7 @@ bool Exiv2Fetcher::fetchDateTime(const QString &imageFilename)
 
   QStringList parameters;
 
-  parameters << "print" << "-Pt" << "-gExif.Image.DateTime" << imageFilename;
+  parameters << "-Pt" << "-gExif.Image.DateTime" << imageFilename;
 
   start("exiv2", parameters);
 
